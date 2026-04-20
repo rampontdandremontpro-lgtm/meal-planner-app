@@ -9,7 +9,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
+
+    if (savedToken) {
+      setToken(savedToken);
+    }
 
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -27,8 +32,10 @@ export function AuthProvider({ children }) {
     const accessToken = response.data.access_token || response.data.token;
     const returnedUser = response.data.user || null;
 
-    localStorage.setItem("token", accessToken);
-    setToken(accessToken);
+    if (accessToken) {
+      localStorage.setItem("token", accessToken);
+      setToken(accessToken);
+    }
 
     if (returnedUser) {
       localStorage.setItem("user", JSON.stringify(returnedUser));
@@ -38,10 +45,10 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
-  const register = async (firstname, lastname, email, password) => {
+  const register = async (firstName, lastName, email, password) => {
     const response = await api.post("/auth/register", {
-      firstname,
-      lastname,
+      firstName,
+      lastName,
       email,
       password,
     });
