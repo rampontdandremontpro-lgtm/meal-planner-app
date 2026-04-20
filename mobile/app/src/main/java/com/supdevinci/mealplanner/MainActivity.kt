@@ -3,45 +3,35 @@ package com.supdevinci.mealplanner
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
+import com.supdevinci.mealplanner.data.TokenManager
+import com.supdevinci.mealplanner.repository.AuthRepository
+import com.supdevinci.mealplanner.ui.screens.LoginScreen
 import com.supdevinci.mealplanner.ui.theme.MealPlannerTheme
+import com.supdevinci.mealplanner.viewmodel.LoginViewModel
+import com.supdevinci.mealplanner.viewmodel.LoginViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        val authRepository = AuthRepository()
+        val tokenManager = TokenManager(applicationContext)
+
+        val factory = LoginViewModelFactory(authRepository, tokenManager)
+        val loginViewModel = ViewModelProvider(this, factory)[LoginViewModel::class.java]
+
         setContent {
             MealPlannerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                LoginScreen(
+                    viewModel = loginViewModel,
+                    onLoginSuccess = {
+                        // Pour l’instant on ne navigue pas encore.
+                        // Plus tard tu pourras envoyer vers RecipesScreen.
+                    }
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MealPlannerTheme {
-        Greeting("Android")
     }
 }
