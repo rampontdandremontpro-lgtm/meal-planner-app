@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+.gradle/
+local.properties
+.idea/
+*.iml
+/build
+captures/
+
+# Nest / React
+coverage/
