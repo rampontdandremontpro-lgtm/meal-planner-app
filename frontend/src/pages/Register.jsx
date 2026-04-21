@@ -7,8 +7,8 @@ export default function Register() {
   const { register } = useAuth();
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    firstname: "",
+    lastname: "",
     email: "",
     password: "",
   });
@@ -32,23 +32,21 @@ export default function Register() {
 
     try {
       await register(
-        form.firstName,
-        form.lastName,
+        form.firstname,
+        form.lastname,
         form.email,
         form.password
       );
 
-      setSuccess("Compte créé avec succès. Tu peux maintenant te connecter.");
+      setSuccess("Compte créé avec succès. Connecte-toi pour accéder à ton espace.");
 
       setTimeout(() => {
         navigate("/login");
       }, 1200);
     } catch (err) {
-      const message = Array.isArray(err.response?.data?.message)
-        ? err.response.data.message.join(" ")
-        : err.response?.data?.message || "Erreur lors de l’inscription.";
-
-      setError(message);
+      setError(
+        err.response?.data?.message || "Erreur lors de l’inscription."
+      );
     } finally {
       setLoading(false);
     }
@@ -63,18 +61,18 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="auth-form">
           <input
             type="text"
-            name="firstName"
+            name="firstname"
             placeholder="Prénom"
-            value={form.firstName}
+            value={form.firstname}
             onChange={handleChange}
             required
           />
 
           <input
             type="text"
-            name="lastName"
+            name="lastname"
             placeholder="Nom"
-            value={form.lastName}
+            value={form.lastname}
             onChange={handleChange}
             required
           />

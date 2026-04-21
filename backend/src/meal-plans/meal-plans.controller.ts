@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Query,
   UseGuards,
@@ -30,5 +33,13 @@ export class MealPlansController {
     @CurrentUser() user: { userId: number; email: string },
   ) {
     return this.mealPlansService.findWeek(date, user.userId);
+  }
+
+  @Delete(':id')
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number; email: string },
+  ) {
+    return this.mealPlansService.remove(id, user.userId);
   }
 }

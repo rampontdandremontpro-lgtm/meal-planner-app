@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { createMealPlan } from "../services/plannerService";
 
-const mealTypes = [
-  { value: "breakfast", label: "Petit-déjeuner" },
-  { value: "lunch", label: "Déjeuner" },
-  { value: "dinner", label: "Dîner" },
+const mealTypeOptions = [
+  { value: "BREAKFAST", label: "Petit-déjeuner" },
+  { value: "LUNCH", label: "Déjeuner" },
+  { value: "DINNER", label: "Dîner" },
 ];
 
 function getTodayDate() {
@@ -18,7 +18,7 @@ export default function AddToPlannerModal({
   onSuccess,
 }) {
   const [date, setDate] = useState(getTodayDate());
-  const [mealType, setMealType] = useState("lunch");
+  const [mealType, setMealType] = useState("LUNCH");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +26,7 @@ export default function AddToPlannerModal({
   useEffect(() => {
     if (isOpen) {
       setDate(getTodayDate());
-      setMealType("lunch");
+      setMealType("LUNCH");
       setMessage("");
       setError("");
     }
@@ -41,11 +41,18 @@ export default function AddToPlannerModal({
     setError("");
 
     try {
-      await createMealPlan({
-        recipeId: recipe.id,
+      const normalizedSource = recipe.source === "external" ? "external" : "local";
+
+      const payload = {
         date,
         mealType,
-      });
+        source: normalizedSource,
+        ...(normalizedSource === "external"
+          ? { externalRecipeId: String(recipe.id) }
+          : { recipeId: recipe.id }),
+      };
+
+      await createMealPlan(payload);
 
       setMessage("Recette ajoutée au planning.");
       onSuccess?.();
@@ -54,10 +61,15 @@ export default function AddToPlannerModal({
         onClose();
       }, 700);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Impossible d’ajouter la recette au planning."
-      );
+      const backendMessage = err.response?.data?.message;
+
+      if (Array.isArray(backendMessage)) {
+        setError(backendMessage.join(" "));
+      } else {
+        setError(
+          backendMessage || "Impossible d’ajouter la recette au planning."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -68,7 +80,7 @@ export default function AddToPlannerModal({
       <div className="modal-card">
         <div className="modal-header">
           <h3>Ajouter au planning</h3>
-          <button className="icon-button" onClick={onClose}>
+          <button type="button" className="icon-button" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -92,7 +104,7 @@ export default function AddToPlannerModal({
               value={mealType}
               onChange={(e) => setMealType(e.target.value)}
             >
-              {mealTypes.map((item) => (
+              {mealTypeOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>

@@ -5,12 +5,15 @@ export async function getWeekMealPlans(date) {
     params: { date },
   });
 
-  return Array.isArray(response.data)
-    ? response.data
-    : response.data?.data || response.data?.mealPlans || [];
+  return response.data?.items || [];
 }
 
 export async function createMealPlan(payload) {
   const response = await api.post("/meal-plans", payload);
+  return response.data;
+}
+
+export async function deleteMealPlan(id) {
+  const response = await api.delete(`/meal-plans/${id}`);
   return response.data;
 }

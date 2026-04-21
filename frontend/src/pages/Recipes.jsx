@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import { getRecipes } from "../services/recipeService";
+import { useAuth } from "../context/AuthContext";
 
 export default function Recipes() {
+  const { isAuthenticated, user } = useAuth();
+
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,7 +15,7 @@ export default function Recipes() {
 
   useEffect(() => {
     fetchRecipes();
-  }, []);
+  }, [isAuthenticated]);
 
   async function fetchRecipes() {
     setLoading(true);
@@ -53,12 +56,26 @@ export default function Recipes() {
       <div className="page-header">
         <div>
           <h1>Découvrez nos recettes</h1>
-          <p>Explorez notre collection de recettes délicieuses et saines</p>
+
+          {isAuthenticated ? (
+            <>
+              <p className="welcome-text">
+                Bienvenue {user?.firstname || user?.name || "utilisateur"} 👋
+              </p>
+              <p>
+                Retrouvez les recettes de notre collection et vos recettes personnelles
+              </p>
+            </>
+          ) : (
+            <p>Explorez notre collection de recettes</p>
+          )}
         </div>
 
-        <Link to="/recipes/new" className="primary-button inline-button">
-          + Créer ma recette
-        </Link>
+        {isAuthenticated && (
+          <Link to="/recipes/new" className="primary-button inline-button">
+            + Créer ma recette
+          </Link>
+        )}
       </div>
 
       <div className="search-box">
@@ -93,7 +110,7 @@ export default function Recipes() {
         <div className="recipes-grid">
           {filteredRecipes.length > 0 ? (
             filteredRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard key={`${recipe.source}-${recipe.id}`} recipe={recipe} />
             ))
           ) : (
             <p>Aucune recette trouvée.</p>

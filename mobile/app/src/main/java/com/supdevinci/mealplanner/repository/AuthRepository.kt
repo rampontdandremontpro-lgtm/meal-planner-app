@@ -7,25 +7,18 @@ import com.supdevinci.mealplanner.data.RegisterRequest
 
 class AuthRepository {
 
+    private val api = RetrofitClient.authApi
+
     suspend fun login(email: String, password: String): LoginResponse {
-        return RetrofitClient.authApi.login(
-            LoginRequest(email = email, password = password)
-        )
+        return api.login(LoginRequest(email, password))
     }
 
     suspend fun register(
-        firstName: String,
-        lastName: String,
+        firstname: String,
+        lastname: String,
         email: String,
         password: String
-    ): LoginResponse {
-        return RetrofitClient.authApi.register(
-            RegisterRequest(
-                firstName = firstName,
-                lastName = lastName,
-                email = email,
-                password = password
-            )
-        )
+    ) {
+        api.register(RegisterRequest(firstname, lastname, email, password))
     }
 }

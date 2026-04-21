@@ -1,34 +1,27 @@
 package com.supdevinci.mealplanner.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
-
 class TokenManager(private val context: Context) {
 
-    companion object {
-        private val TOKEN_KEY = stringPreferencesKey("jwt_token")
-    }
+    private val tokenKey = stringPreferencesKey("jwt_token")
 
-    val tokenFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[TOKEN_KEY]
-    }
+    val tokenFlow: Flow<String?> = context.dataStore.data
+        .map { preferences -> preferences[tokenKey] }
 
     suspend fun saveToken(token: String) {
-        context.dataStore.edit { preferences: MutablePreferences ->
-            preferences[TOKEN_KEY] = token
+        context.dataStore.edit { preferences ->
+            preferences[tokenKey] = token
         }
     }
 
     suspend fun clearToken() {
         context.dataStore.edit { preferences ->
-            preferences.remove(TOKEN_KEY)
+            preferences.remove(tokenKey)
         }
     }
 }

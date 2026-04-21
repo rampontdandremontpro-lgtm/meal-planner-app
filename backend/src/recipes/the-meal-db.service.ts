@@ -6,7 +6,9 @@ type ExternalRecipe = {
   title: string;
   category: string;
   instructions: string;
-  image: string;
+  imageUrl: string;
+  prepTime: string;
+  servings: number | null;
   ingredients: {
     name: string;
     quantity: string;
@@ -20,19 +22,30 @@ export class TheMealDbService {
   private readonly baseUrl = 'https://www.themealdb.com/api/json/v1/1';
 
   async searchMeals(search?: string): Promise<ExternalRecipe[]> {
-    const url = search
-      ? `${this.baseUrl}/search.php?s=${encodeURIComponent(search)}`
-      : `${this.baseUrl}/search.php?s=`;
+    const query = search?.trim();
 
-    const response = await axios.get(url);
-    const meals = response.data?.meals ?? [];
+    const response = query
+      ? await axios.get(`${this.baseUrl}/search.php`, {
+          params: { s: query },
+        })
+      : await axios.get(`${this.baseUrl}/search.php`, {
+          params: { f: 'a' },
+        });
+
+    let meals = response.data?.meals ?? [];
+
+    if (!Array.isArray(meals)) {
+      meals = meals ? [meals] : [];
+    }
 
     return meals.map((meal: any) => this.mapMeal(meal));
   }
 
   async findMealById(id: string): Promise<ExternalRecipe | null> {
-    const url = `${this.baseUrl}/lookup.php?i=${encodeURIComponent(id)}`;
-    const response = await axios.get(url);
+    const response = await axios.get(`${this.baseUrl}/lookup.php`, {
+      params: { i: id },
+    });
+
     const meal = response.data?.meals?.[0];
 
     if (!meal) {
@@ -63,11 +76,13 @@ export class TheMealDbService {
     }
 
     return {
-      id: meal.idMeal,
+      id: String(meal.idMeal),
       title: meal.strMeal ?? '',
       category: meal.strCategory ?? '',
       instructions: meal.strInstructions ?? '',
-      image: meal.strMealThumb ?? '',
+      imageUrl: meal.strMealThumb ?? '',
+      prepTime: '',
+      servings: null,
       ingredients,
       source: 'external',
     };

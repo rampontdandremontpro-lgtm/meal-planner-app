@@ -32,11 +32,12 @@ function normalizeRecipe(recipe) {
       recipe.imageUrl ||
       recipe.strMealThumb ||
       "https://via.placeholder.com/400x300?text=Meal+Planner",
-    prepTime: recipe.prepTime || recipe.preparationTime || 10,
+    prepTime: recipe.prepTime || recipe.preparationTime || "",
     servings: recipe.servings || 2,
     instructions: recipe.instructions || recipe.strInstructions || "",
     ingredients: extractIngredients(recipe),
-    source: recipe.source || (recipe.idMeal ? "themealdb" : "custom"),
+    source: recipe.source || "external",
+    userId: recipe.userId || recipe.user?.id || null,
   };
 }
 
@@ -50,12 +51,22 @@ export async function getRecipes(params = {}) {
   return rawData.map(normalizeRecipe);
 }
 
-export async function getRecipeById(id) {
-  const response = await api.get(`/recipes/${id}`);
+export async function getRecipeById(source, id) {
+  const response = await api.get(`/recipes/${source}/${id}`);
   return normalizeRecipe(response.data?.data || response.data);
 }
 
 export async function createRecipe(payload) {
   const response = await api.post("/recipes", payload);
+  return response.data;
+}
+
+export async function updateRecipe(id, payload) {
+  const response = await api.put(`/recipes/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteRecipe(id) {
+  const response = await api.delete(`/recipes/${id}`);
   return response.data;
 }

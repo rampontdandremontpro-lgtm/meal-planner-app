@@ -27,6 +27,15 @@ export class Recipe {
   @Column({ nullable: true })
   category!: string;
 
+  @Column({ nullable: true })
+  imageUrl!: string;
+
+  @Column({ nullable: true })
+  prepTime!: string;
+
+  @Column({ type: 'int', nullable: true })
+  servings!: number | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

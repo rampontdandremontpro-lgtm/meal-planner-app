@@ -7,103 +7,78 @@ import Register from "./pages/Register";
 import Recipes from "./pages/Recipes";
 import RecipeDetail from "./pages/RecipeDetail";
 import AddRecipe from "./pages/AddRecipe";
+import EditRecipe from "./pages/EditRecipe";
 import Planner from "./pages/Planner";
 import ShoppingList from "./pages/ShoppingList";
 import "./App.css";
 
-function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <p>Chargement...</p>;
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/recipes" replace />;
-  }
-
-  return children;
-}
-
-function ProtectedLayout({ children }) {
-  return (
-    <PrivateRoute>
-      <Navbar />
-      {children}
-    </PrivateRoute>
-  );
-}
-
 function App() {
+  const { isAuthenticated } = useAuth();
+
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        }
-      />
+    <>
+      <Navbar />
 
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <Register />
-          </PublicRoute>
-        }
-      />
+      <Routes>
+        <Route path="/" element={<Navigate to="/recipes" replace />} />
 
-      <Route path="/" element={<Navigate to="/recipes" replace />} />
+        <Route path="/recipes" element={<Recipes />} />
 
-      <Route
-        path="/recipes"
-        element={
-          <ProtectedLayout>
-            <Recipes />
-          </ProtectedLayout>
-        }
-      />
+        <Route
+          path="/recipes/new"
+          element={
+            <PrivateRoute>
+              <AddRecipe />
+            </PrivateRoute>
+          }
+        />
 
-      <Route
-        path="/recipes/new"
-        element={
-          <ProtectedLayout>
-            <AddRecipe />
-          </ProtectedLayout>
-        }
-      />
+        <Route
+          path="/recipes/:id/edit"
+          element={
+            <PrivateRoute>
+              <EditRecipe />
+            </PrivateRoute>
+          }
+        />
 
-      <Route
-        path="/recipes/:id"
-        element={
-          <ProtectedLayout>
-            <RecipeDetail />
-          </ProtectedLayout>
-        }
-      />
+        <Route path="/recipes/:source/:id" element={<RecipeDetail />} />
 
-      <Route
-        path="/planner"
-        element={
-          <ProtectedLayout>
-            <Planner />
-          </ProtectedLayout>
-        }
-      />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/recipes" replace /> : <Login />
+          }
+        />
 
-      <Route
-        path="/shopping"
-        element={
-          <ProtectedLayout>
-            <ShoppingList />
-          </ProtectedLayout>
-        }
-      />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? <Navigate to="/recipes" replace /> : <Register />
+          }
+        />
 
-      <Route path="*" element={<Navigate to="/recipes" replace />} />
-    </Routes>
+        <Route
+          path="/planner"
+          element={
+            <PrivateRoute>
+              <Planner />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/shopping"
+          element={
+            <PrivateRoute>
+              <ShoppingList />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/recipes" replace />} />
+      </Routes>
+    </>
   );
 }
 

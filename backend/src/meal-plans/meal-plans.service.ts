@@ -47,16 +47,15 @@ export class MealPlansService {
 
     if (createMealPlanDto.source === MealSource.LOCAL) {
       if (!createMealPlanDto.recipeId) {
-        throw new BadRequestException('recipeId est requis pour une recette locale');
+        throw new BadRequestException(
+          'recipeId est requis pour une recette locale',
+        );
       }
 
-      const localRecipe = await this.recipesService.findOne(createMealPlanDto.recipeId);
-
-      if (!localRecipe) {
-        throw new NotFoundException('Recette locale introuvable');
-      }
-
-      recipe = await this.recipesService.findLocalEntityById(createMealPlanDto.recipeId);
+      recipe = await this.recipesService.ensureLocalRecipeBelongsToUser(
+        createMealPlanDto.recipeId,
+        userId,
+      );
       externalRecipeId = null;
     }
 
@@ -67,7 +66,10 @@ export class MealPlansService {
         );
       }
 
-      await this.recipesService.findExternalById(createMealPlanDto.externalRecipeId);
+      await this.recipesService.findExternalById(
+        createMealPlanDto.externalRecipeId,
+      );
+
       externalRecipeId = createMealPlanDto.externalRecipeId;
       recipe = null;
     }
@@ -83,7 +85,7 @@ export class MealPlansService {
 
     const savedMealPlan = await this.mealPlansRepository.save(mealPlan);
 
-    return this.formatMealPlan(savedMealPlan);
+    return await this.formatMealPlan(savedMealPlan);
   }
 
   async findWeek(date: string, userId: number) {
@@ -94,59 +96,75 @@ export class MealPlansService {
         user: { id: userId },
         date: Between(startOfWeek, endOfWeek),
       },
-      relations: ['user', 'recipe'],
+      relations: ['user', 'recipe', 'recipe.ingredients'],
       order: {
         date: 'ASC',
       },
     });
 
-    const result = await Promise.all(
-      mealPlans.map(async (mealPlan) => {
-        if (mealPlan.source === MealSource.EXTERNAL && mealPlan.externalRecipeId) {
-          const externalRecipe = await this.recipesService.findExternalById(
-            mealPlan.externalRecipeId,
-          );
-
-          return {
-            id: mealPlan.id,
-            date: mealPlan.date,
-            mealType: mealPlan.mealType,
-            source: mealPlan.source,
-            recipe: externalRecipe,
-          };
-        }
-
-        return this.formatMealPlan(mealPlan);
-      }),
+    const items = await Promise.all(
+      mealPlans.map((mealPlan) => this.formatMealPlan(mealPlan)),
     );
 
     return {
       weekStart: startOfWeek,
       weekEnd: endOfWeek,
-      items: result,
+      items,
     };
   }
 
-  private formatMealPlan(mealPlan: MealPlan) {
+  async remove(id: number, userId: number) {
+    const mealPlan = await this.mealPlansRepository.findOne({
+      where: {
+        id,
+        user: { id: userId },
+      },
+      relations: ['user'],
+    });
+
+    if (!mealPlan) {
+      throw new NotFoundException('Meal plan introuvable');
+    }
+
+    await this.mealPlansRepository.remove(mealPlan);
+
+    return { message: 'Meal plan deleted' };
+  }
+
+  private async formatMealPlan(mealPlan: MealPlan) {
+    if (mealPlan.source === MealSource.EXTERNAL && mealPlan.externalRecipeId) {
+      const externalRecipe = await this.recipesService.findExternalById(
+        mealPlan.externalRecipeId,
+      );
+
+      return {
+        id: mealPlan.id,
+        date: mealPlan.date,
+        mealType: mealPlan.mealType,
+        source: mealPlan.source,
+        recipe: externalRecipe,
+      };
+    }
+
     return {
       id: mealPlan.id,
       date: mealPlan.date,
       mealType: mealPlan.mealType,
       source: mealPlan.source,
-      recipe:
-        mealPlan.source === MealSource.LOCAL
-          ? mealPlan.recipe
-            ? {
-                id: mealPlan.recipe.id,
-                title: mealPlan.recipe.title,
-                description: mealPlan.recipe.description,
-                instructions: mealPlan.recipe.instructions,
-                category: mealPlan.recipe.category,
-                ingredients: mealPlan.recipe.ingredients,
-                source: 'local',
-              }
-            : null
-          : null,
+      recipe: mealPlan.recipe
+        ? {
+            id: mealPlan.recipe.id,
+            title: mealPlan.recipe.title,
+            description: mealPlan.recipe.description,
+            instructions: mealPlan.recipe.instructions,
+            category: mealPlan.recipe.category,
+            imageUrl: mealPlan.recipe.imageUrl,
+            prepTime: mealPlan.recipe.prepTime,
+            servings: mealPlan.recipe.servings,
+            ingredients: mealPlan.recipe.ingredients,
+            source: 'local',
+          }
+        : null,
     };
   }
 

@@ -28,7 +28,7 @@ export default function Login() {
 
     try {
       await login(form.email, form.password);
-      navigate("/");
+      navigate("/recipes");
     } catch (err) {
       setError(
         err.response?.data?.message || "Erreur lors de la connexion."
@@ -42,7 +42,7 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>Connexion</h1>
-        <p>Connecte-toi à ton Meal Planner</p>
+        <p>Connecte-toi à ton espace Meal Planner</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <input

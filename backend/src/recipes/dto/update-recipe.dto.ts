@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateRecipeIngredientDto {
+export class UpdateRecipeIngredientDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -23,7 +23,7 @@ export class CreateRecipeIngredientDto {
   unit?: string;
 }
 
-export class CreateRecipeDto {
+export class UpdateRecipeDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
@@ -56,6 +56,6 @@ export class CreateRecipeDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateRecipeIngredientDto)
-  ingredients!: CreateRecipeIngredientDto[];
+  @Type(() => UpdateRecipeIngredientDto)
+  ingredients!: UpdateRecipeIngredientDto[];
 }

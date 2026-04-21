@@ -1,9 +1,14 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createRecipe } from "../services/recipeService";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getRecipeById, updateRecipe } from "../services/recipeService";
 
-export default function AddRecipe() {
+export default function EditRecipe() {
+  const { id } = useParams();
   const navigate = useNavigate();
+
+  const [loadingRecipe, setLoadingRecipe] = useState(true);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -16,8 +21,45 @@ export default function AddRecipe() {
 
   const [ingredients, setIngredients] = useState([{ name: "", quantity: "" }]);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  useEffect(() => {
+    fetchRecipe();
+  }, [id]);
+
+  async function fetchRecipe() {
+    setLoadingRecipe(true);
+    setError("");
+
+    try {
+      const recipe = await getRecipeById("local", id);
+
+      setForm({
+        title: recipe.title || "",
+        category: recipe.category || "",
+        imageUrl: recipe.image || "",
+        prepTime: recipe.prepTime || "",
+        servings: recipe.servings || "",
+        instructions: recipe.instructions || "",
+      });
+
+      setIngredients(
+        recipe.ingredients?.length
+          ? recipe.ingredients.map((item) => ({
+              name: item.name || "",
+              quantity:
+                item.quantity && item.unit
+                  ? `${item.quantity} ${item.unit}`.trim()
+                  : item.quantity || "",
+            }))
+          : [{ name: "", quantity: "" }]
+      );
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Impossible de charger la recette."
+      );
+    } finally {
+      setLoadingRecipe(false);
+    }
+  }
 
   function handleChange(e) {
     setForm({
@@ -42,7 +84,7 @@ export default function AddRecipe() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true);
+    setLoadingSubmit(true);
     setError("");
 
     const cleanedIngredients = ingredients.filter(
@@ -50,31 +92,39 @@ export default function AddRecipe() {
     );
 
     try {
-      await createRecipe({
-  title: form.title,
-  category: form.category,
-  imageUrl: form.imageUrl,
-  prepTime: form.prepTime ? String(form.prepTime) : "20",
-  servings: Number(form.servings) || 2,
-  instructions: form.instructions,
-  ingredients: cleanedIngredients,
-});
+      await updateRecipe(id, {
+        title: form.title,
+        category: form.category,
+        imageUrl: form.imageUrl,
+        prepTime: form.prepTime ? String(form.prepTime) : "10 min",
+        servings: Number(form.servings) || 2,
+        instructions: form.instructions,
+        ingredients: cleanedIngredients,
+      });
 
-      navigate("/recipes");
+      navigate(`/recipes/local/${id}`);
     } catch (err) {
       setError(
-        err.response?.data?.message || "Impossible de créer la recette."
+        err.response?.data?.message || "Impossible de modifier la recette."
       );
     } finally {
-      setLoading(false);
+      setLoadingSubmit(false);
     }
+  }
+
+  if (loadingRecipe) {
+    return (
+      <div className="page-container">
+        <p>Chargement de la recette...</p>
+      </div>
+    );
   }
 
   return (
     <div className="page-container">
       <div className="form-page-card">
-        <h1>Créer ma recette</h1>
-        <p>Ajoute une recette personnalisée avec tes propres ingrédients</p>
+        <h1>Modifier ma recette</h1>
+        <p>Modifie les informations de ta recette personnalisée</p>
 
         <form onSubmit={handleSubmit} className="recipe-form">
           <div className="form-grid">
@@ -94,7 +144,6 @@ export default function AddRecipe() {
               <input
                 type="text"
                 name="category"
-                placeholder="Petit-déjeuner, Déjeuner, Dîner..."
                 value={form.category}
                 onChange={handleChange}
                 required
@@ -114,10 +163,11 @@ export default function AddRecipe() {
             <label>
               Temps de préparation
               <input
-              type="text"
-              placeholder="Ex: 10 min ou 1h30"
-              value={form.prepTime}
-              onChange={(e) => setForm({ ...form, prepTime: e.target.value })}
+                type="text"
+                name="prepTime"
+                placeholder="Ex: 10 min"
+                value={form.prepTime}
+                onChange={handleChange}
               />
             </label>
 
@@ -139,7 +189,6 @@ export default function AddRecipe() {
               rows="6"
               value={form.instructions}
               onChange={handleChange}
-              placeholder="Une étape par ligne ou en texte libre..."
               required
             />
           </label>
@@ -192,12 +241,16 @@ export default function AddRecipe() {
             <button
               type="button"
               className="secondary-button"
-              onClick={() => navigate("/recipes")}
+              onClick={() => navigate(`/recipes/local/${id}`)}
             >
               Annuler
             </button>
-            <button type="submit" className="primary-button" disabled={loading}>
-              {loading ? "Création..." : "Créer la recette"}
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loadingSubmit}
+            >
+              {loadingSubmit ? "Modification..." : "Enregistrer les modifications"}
             </button>
           </div>
         </form>

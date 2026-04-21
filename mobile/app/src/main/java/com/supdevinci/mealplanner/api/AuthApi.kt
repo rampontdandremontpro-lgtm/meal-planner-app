@@ -7,9 +7,14 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApi {
+
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): LoginResponse
+    suspend fun login(
+        @Body request: LoginRequest
+    ): LoginResponse
 
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): LoginResponse
+    suspend fun register(
+        @Body request: RegisterRequest
+    ): Unit
 }

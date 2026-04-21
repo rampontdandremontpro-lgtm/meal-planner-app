@@ -18,7 +18,7 @@ export class ShoppingItem {
   @Column({ default: false })
   checked!: boolean;
 
-  @Column({ default: false })
+  @Column({ default: true })
   isManual!: boolean;
 
   @Column({ type: 'date' })

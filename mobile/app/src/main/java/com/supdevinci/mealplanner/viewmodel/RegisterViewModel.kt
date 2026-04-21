@@ -6,6 +6,8 @@ import com.supdevinci.mealplanner.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import org.json.JSONObject
 
 data class RegisterUiState(
     val firstname: String = "",
@@ -67,7 +69,31 @@ class RegisterViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isSuccess = true,
-                    successMessage = "Compte créé avec succès."
+                    successMessage = "Compte créé avec succès. Redirection..."
+                )
+            } catch (e: HttpException) {
+                val backendMessage = try {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    if (!errorBody.isNullOrBlank()) {
+                        val json = JSONObject(errorBody)
+                        when {
+                            json.has("message") && json.get("message") is String -> json.getString("message")
+                            json.has("message") && json.get("message") is org.json.JSONArray -> {
+                                val arr = json.getJSONArray("message")
+                                if (arr.length() > 0) arr.getString(0) else "Erreur lors de l'inscription."
+                            }
+                            else -> "Erreur lors de l'inscription."
+                        }
+                    } else {
+                        "Erreur lors de l'inscription."
+                    }
+                } catch (_: Exception) {
+                    "Erreur lors de l'inscription."
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = backendMessage
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { getWeekMealPlans } from "../services/plannerService";
+import { Link, useNavigate } from "react-router-dom";
+import { deleteMealPlan, getWeekMealPlans } from "../services/plannerService";
 
 const mealTypes = [
-  { key: "breakfast", label: "Petit-déjeuner" },
-  { key: "lunch", label: "Déjeuner" },
-  { key: "dinner", label: "Dîner" },
+  { key: "BREAKFAST", label: "Petit-déjeuner", className: "planner-breakfast" },
+  { key: "LUNCH", label: "Déjeuner", className: "planner-lunch" },
+  { key: "DINNER", label: "Dîner", className: "planner-dinner" },
 ];
 
 const dayNames = [
@@ -23,7 +23,6 @@ function getMonday(date = new Date()) {
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
   return d;
 }
 
@@ -32,7 +31,7 @@ function formatDateForApi(date) {
 }
 
 function formatDay(date) {
-  return `${dayNames[(date.getDay() + 6) % 7]} ${date.getDate()}`;
+  return `${dayNames[(date.getDay() + 6) % 7]}`;
 }
 
 function buildWeekDays(startDate) {
@@ -47,24 +46,40 @@ function buildWeekDays(startDate) {
   return days;
 }
 
+function normalizeMealType(value) {
+  if (!value) return "";
+  return String(value).toUpperCase();
+}
+
+function normalizeDate(value) {
+  if (!value) return "";
+  const str = String(value);
+  return str.includes("T") ? str.split("T")[0] : str;
+}
+
 function normalizeMealPlan(item) {
   return {
     id: item.id,
-    date: item.date || item.plannedDate || item.day || item.mealDate,
-    mealType: item.mealType,
-    recipe: item.recipe || {
-      id: item.recipeId,
-      title: item.recipeTitle || item.title || "Recette",
-      image: item.recipeImage || item.image || "",
+    date: normalizeDate(item.date),
+    mealType: normalizeMealType(item.mealType),
+    source: item.source || item.recipe?.source || "external",
+    recipe: {
+      id: item.recipe?.id,
+      source: item.recipe?.source || item.source || "external",
+      title: item.recipe?.title || "Recette",
+      image: item.recipe?.image || item.recipe?.imageUrl || "",
     },
   };
 }
 
 export default function Planner() {
+  const navigate = useNavigate();
+
   const [currentMonday, setCurrentMonday] = useState(getMonday());
   const [mealPlans, setMealPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   const weekDays = useMemo(() => buildWeekDays(currentMonday), [currentMonday]);
 
@@ -78,13 +93,29 @@ export default function Planner() {
 
     try {
       const data = await getWeekMealPlans(formatDateForApi(currentMonday));
-      setMealPlans(data.map(normalizeMealPlan));
+      const normalized = data.map(normalizeMealPlan);
+      setMealPlans(normalized);
     } catch (err) {
       setError(
         err.response?.data?.message || "Impossible de charger le planning."
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRemove(mealPlanId) {
+    try {
+      setDeletingId(mealPlanId);
+      await deleteMealPlan(mealPlanId);
+      setMealPlans((prev) => prev.filter((item) => item.id !== mealPlanId));
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          "Impossible de retirer cette recette du planning."
+      );
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -102,6 +133,7 @@ export default function Planner() {
 
   function getMealForCell(date, mealType) {
     const formatted = formatDateForApi(date);
+
     return mealPlans.find(
       (item) => item.date === formatted && item.mealType === mealType
     );
@@ -148,22 +180,48 @@ export default function Planner() {
                 const mealItem = getMealForCell(day, meal.key);
 
                 return (
-                  <div key={`${meal.key}-${day.toISOString()}`} className="planner-cell">
+                  <div
+                    key={`${meal.key}-${day.toISOString()}`}
+                    className={`planner-cell ${meal.className}`}
+                  >
                     {mealItem ? (
-                      <Link
-                        to={`/recipes/${mealItem.recipe?.id}`}
-                        className="planner-meal-card"
-                      >
+                      <div className="planner-filled-card">
                         {mealItem.recipe?.image ? (
-                          <img
-                            src={mealItem.recipe.image}
-                            alt={mealItem.recipe.title}
-                          />
+                          <Link
+                            to={`/recipes/${mealItem.recipe?.source || "external"}/${mealItem.recipe?.id}`}
+                          >
+                            <img
+                              src={mealItem.recipe.image}
+                              alt={mealItem.recipe.title}
+                              className="planner-filled-image"
+                            />
+                          </Link>
                         ) : null}
-                        <span>{mealItem.recipe?.title}</span>
-                      </Link>
+
+                        <Link
+                          to={`/recipes/${mealItem.recipe?.source || "external"}/${mealItem.recipe?.id}`}
+                          className="planner-filled-title"
+                        >
+                          {mealItem.recipe?.title}
+                        </Link>
+
+                        <button
+                          type="button"
+                          className="planner-remove-button"
+                          onClick={() => handleRemove(mealItem.id)}
+                          disabled={deletingId === mealItem.id}
+                        >
+                          {deletingId === mealItem.id ? "Retrait..." : "Retirer"}
+                        </button>
+                      </div>
                     ) : (
-                      <div className="planner-empty">+</div>
+                      <button
+                        type="button"
+                        className="planner-add-button"
+                        onClick={() => navigate("/recipes")}
+                      >
+                        +
+                      </button>
                     )}
                   </div>
                 );

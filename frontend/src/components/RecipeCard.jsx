@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export default function RecipeCard({ recipe }) {
   return (
-    <Link to={`/recipes/${recipe.id}`} className="recipe-card">
+    <Link to={`/recipes/${recipe.source}/${recipe.id}`} className="recipe-card">
       <img
         src={recipe.image}
         alt={recipe.title}
@@ -14,7 +14,7 @@ export default function RecipeCard({ recipe }) {
 
         <div className="recipe-meta-row">
           <span className="badge">{recipe.category}</span>
-          {recipe.source === "custom" && (
+          {recipe.source === "local" && (
             <span className="badge badge-outline">Ma recette</span>
           )}
         </div>
