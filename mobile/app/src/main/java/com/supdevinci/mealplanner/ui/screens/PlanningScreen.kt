@@ -107,7 +107,7 @@ fun PlanningScreen(
                 PlannerMealRow(
                     days = days,
                     items = uiState.items,
-                    mealType = "BREAKFAST",
+                    mealType = "Petit-Déjeuner",
                     borderColor = BreakfastBorder,
                     onGoToRecipes = onGoToRecipes,
                     onRecipeClick = onRecipeClick,
@@ -119,7 +119,7 @@ fun PlanningScreen(
                 PlannerMealRow(
                     days = days,
                     items = uiState.items,
-                    mealType = "LUNCH",
+                    mealType = "Déjeuner",
                     borderColor = LunchBorder,
                     onGoToRecipes = onGoToRecipes,
                     onRecipeClick = onRecipeClick,
@@ -131,7 +131,7 @@ fun PlanningScreen(
                 PlannerMealRow(
                     days = days,
                     items = uiState.items,
-                    mealType = "DINNER",
+                    mealType = "Diner",
                     borderColor = DinnerBorder,
                     onGoToRecipes = onGoToRecipes,
                     onRecipeClick = onRecipeClick,

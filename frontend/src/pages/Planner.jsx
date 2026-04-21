@@ -1,21 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { deleteMealPlan, getWeekMealPlans } from "../services/plannerService";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
-const mealTypes = [
+const MEAL_TYPES = [
   { key: "BREAKFAST", label: "Petit-déjeuner", className: "planner-breakfast" },
   { key: "LUNCH", label: "Déjeuner", className: "planner-lunch" },
   { key: "DINNER", label: "Dîner", className: "planner-dinner" },
-];
-
-const dayNames = [
-  "Lundi",
-  "Mardi",
-  "Mercredi",
-  "Jeudi",
-  "Vendredi",
-  "Samedi",
-  "Dimanche",
 ];
 
 function getMonday(date = new Date()) {
@@ -23,120 +13,114 @@ function getMonday(date = new Date()) {
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function formatDateForApi(date) {
-  return date.toISOString().split("T")[0];
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-function formatDay(date) {
-  return `${dayNames[(date.getDay() + 6) % 7]}`;
+function formatDateLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function buildWeekDays(startDate) {
-  const days = [];
-
-  for (let i = 0; i < 7; i += 1) {
-    const day = new Date(startDate);
-    day.setDate(startDate.getDate() + i);
-    days.push(day);
-  }
-
-  return days;
-}
-
-function normalizeMealType(value) {
-  if (!value) return "";
-  return String(value).toUpperCase();
-}
-
-function normalizeDate(value) {
-  if (!value) return "";
-  const str = String(value);
-  return str.includes("T") ? str.split("T")[0] : str;
-}
-
-function normalizeMealPlan(item) {
-  return {
-    id: item.id,
-    date: normalizeDate(item.date),
-    mealType: normalizeMealType(item.mealType),
-    source: item.source || item.recipe?.source || "external",
-    recipe: {
-      id: item.recipe?.id,
-      source: item.recipe?.source || item.source || "external",
-      title: item.recipe?.title || "Recette",
-      image: item.recipe?.image || item.recipe?.imageUrl || "",
-    },
-  };
+function getFrenchDayShort(date) {
+  const days = [
+    "Dimanche",
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+  ];
+  return days[date.getDay()];
 }
 
 export default function Planner() {
   const navigate = useNavigate();
 
-  const [currentMonday, setCurrentMonday] = useState(getMonday());
+  const [currentMonday, setCurrentMonday] = useState(() => getMonday());
   const [mealPlans, setMealPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [removingId, setRemovingId] = useState(null);
 
-  const weekDays = useMemo(() => buildWeekDays(currentMonday), [currentMonday]);
-
-  useEffect(() => {
-    fetchWeekPlans();
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => addDays(currentMonday, index));
   }, [currentMonday]);
 
-  async function fetchWeekPlans() {
-    setLoading(true);
-    setError("");
-
+  async function loadMealPlans() {
     try {
-      const data = await getWeekMealPlans(formatDateForApi(currentMonday));
-      const normalized = data.map(normalizeMealPlan);
-      setMealPlans(normalized);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Impossible de charger le planning."
+      setLoading(true);
+      setErrorMessage("");
+
+      const mondayString = formatDateLocal(currentMonday);
+
+      const response = await api.get("/meal-plans/week", {
+        params: { date: mondayString },
+      });
+
+      setMealPlans(response.data?.items || []);
+    } catch (error) {
+      const backendMessage =
+        error?.response?.data?.message || "Impossible de charger le planning.";
+
+      setErrorMessage(
+        Array.isArray(backendMessage) ? backendMessage.join(", ") : backendMessage
       );
+      setMealPlans([]);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRemove(mealPlanId) {
+  useEffect(() => {
+    loadMealPlans();
+  }, [currentMonday]);
+
+  async function handleRemoveMealPlan(id) {
     try {
-      setDeletingId(mealPlanId);
-      await deleteMealPlan(mealPlanId);
-      setMealPlans((prev) => prev.filter((item) => item.id !== mealPlanId));
-    } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "Impossible de retirer cette recette du planning."
+      setRemovingId(id);
+      setErrorMessage("");
+
+      await api.delete(`/meal-plans/${id}`);
+      await loadMealPlans();
+    } catch (error) {
+      const backendMessage =
+        error?.response?.data?.message ||
+        "Impossible de retirer cette recette du planning.";
+
+      setErrorMessage(
+        Array.isArray(backendMessage) ? backendMessage.join(", ") : backendMessage
       );
     } finally {
-      setDeletingId(null);
+      setRemovingId(null);
     }
   }
 
-  function previousWeek() {
-    const newDate = new Date(currentMonday);
-    newDate.setDate(newDate.getDate() - 7);
-    setCurrentMonday(newDate);
-  }
-
-  function nextWeek() {
-    const newDate = new Date(currentMonday);
-    newDate.setDate(newDate.getDate() + 7);
-    setCurrentMonday(newDate);
-  }
-
-  function getMealForCell(date, mealType) {
-    const formatted = formatDateForApi(date);
-
+  function getMealForCell(dateString, mealType) {
     return mealPlans.find(
-      (item) => item.date === formatted && item.mealType === mealType
+      (item) => item.date === dateString && item.mealType === mealType
     );
+  }
+
+  function handleAddClick(dateString, mealType) {
+    navigate("/recipes", {
+      state: {
+        plannerPrefill: {
+          date: dateString,
+          mealType,
+        },
+      },
+    });
   }
 
   return (
@@ -148,80 +132,93 @@ export default function Planner() {
         </div>
       </div>
 
+      {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
+
       <div className="week-nav-card">
-        <button className="icon-button" onClick={previousWeek}>
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setCurrentMonday((prev) => addDays(prev, -7))}
+        >
           ←
         </button>
-        <h2>Semaine du {formatDateForApi(currentMonday)}</h2>
-        <button className="icon-button" onClick={nextWeek}>
+
+        <h2>Semaine du {formatDateLocal(currentMonday)}</h2>
+
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setCurrentMonday((prev) => addDays(prev, 7))}
+        >
           →
         </button>
       </div>
 
-      {loading && <p>Chargement du planning...</p>}
-      {error && <p className="error-message">{error}</p>}
-
-      {!loading && !error && (
+      {loading ? (
+        <div className="placeholder-card">
+          <p>Chargement du planning...</p>
+        </div>
+      ) : (
         <div className="planner-table">
           <div className="planner-header-row">
-            <div className="planner-side-label empty-cell" />
-            {weekDays.map((day) => (
-              <div key={day.toISOString()} className="planner-day-header">
-                {formatDay(day)}
+            <div className="empty-cell" />
+            {weekDates.map((date) => (
+              <div key={formatDateLocal(date)} className="planner-day-header">
+                {getFrenchDayShort(date)} {date.getDate()}
               </div>
             ))}
           </div>
 
-          {mealTypes.map((meal) => (
-            <div key={meal.key} className="planner-row">
-              <div className="planner-side-label">{meal.label}</div>
+          {MEAL_TYPES.map((mealType) => (
+            <div className="planner-row" key={mealType.key}>
+              <div className="planner-side-label">{mealType.label}</div>
 
-              {weekDays.map((day) => {
-                const mealItem = getMealForCell(day, meal.key);
+              {weekDates.map((date) => {
+                const dateString = formatDateLocal(date);
+                const meal = getMealForCell(dateString, mealType.key);
 
                 return (
                   <div
-                    key={`${meal.key}-${day.toISOString()}`}
-                    className={`planner-cell ${meal.className}`}
+                    key={`${mealType.key}-${dateString}`}
+                    className={`planner-cell ${mealType.className}`}
                   >
-                    {mealItem ? (
+                    {!meal ? (
+                      <button
+                        type="button"
+                        className="planner-add-button"
+                        onClick={() => handleAddClick(dateString, mealType.key)}
+                      >
+                        +
+                      </button>
+                    ) : (
                       <div className="planner-filled-card">
-                        {mealItem.recipe?.image ? (
-                          <Link
-                            to={`/recipes/${mealItem.recipe?.source || "external"}/${mealItem.recipe?.id}`}
-                          >
-                            <img
-                              src={mealItem.recipe.image}
-                              alt={mealItem.recipe.title}
-                              className="planner-filled-image"
-                            />
-                          </Link>
-                        ) : null}
+                        <img
+                          className="planner-filled-image"
+                          src={
+                            meal.recipe?.imageUrl ||
+                            "https://via.placeholder.com/400x300?text=Meal+Planner"
+                          }
+                          alt={meal.recipe?.title || "Recette"}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src =
+                              "https://via.placeholder.com/400x300?text=Meal+Planner";
+                          }}
+                        />
 
-                        <Link
-                          to={`/recipes/${mealItem.recipe?.source || "external"}/${mealItem.recipe?.id}`}
-                          className="planner-filled-title"
-                        >
-                          {mealItem.recipe?.title}
-                        </Link>
+                        <div className="planner-filled-title">
+                          {meal.recipe?.title || "Recette"}
+                        </div>
 
                         <button
                           type="button"
                           className="planner-remove-button"
-                          onClick={() => handleRemove(mealItem.id)}
-                          disabled={deletingId === mealItem.id}
+                          onClick={() => handleRemoveMealPlan(meal.id)}
+                          disabled={removingId === meal.id}
                         >
-                          {deletingId === mealItem.id ? "Retrait..." : "Retirer"}
+                          {removingId === meal.id ? "Retrait..." : "Retirer"}
                         </button>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="planner-add-button"
-                        onClick={() => navigate("/recipes")}
-                      >
-                        +
-                      </button>
                     )}
                   </div>
                 );

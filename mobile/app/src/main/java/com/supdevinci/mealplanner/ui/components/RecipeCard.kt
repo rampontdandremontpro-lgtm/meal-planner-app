@@ -41,11 +41,15 @@ fun RecipeCard(
     ) {
         Column {
             AsyncImage(
-                model = recipe.imageUrl,
+                model = if (recipe.imageUrl.isNotBlank()) {
+                    recipe.imageUrl
+                } else {
+                    "https://via.placeholder.com/1200x600?text=Meal+Planner"
+                },
                 contentDescription = recipe.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(210.dp),
+                    .height(260.dp),
                 contentScale = ContentScale.Crop
             )
 

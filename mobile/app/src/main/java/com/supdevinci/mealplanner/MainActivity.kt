@@ -134,7 +134,10 @@ class MainActivity : ComponentActivity() {
                                 previousContentScreen = "recipes"
                                 currentScreen = "recipe_detail"
                             },
-                            onAddRecipeClick = { currentScreen = "add_recipe" }
+                            onAddRecipeClick = {
+                                addRecipeViewModel.resetState()
+                                currentScreen = "add_recipe"
+                            }
                         )
 
                         "login" -> LoginScreen(
@@ -174,8 +177,12 @@ class MainActivity : ComponentActivity() {
 
                         "add_recipe" -> AddRecipeScreen(
                             viewModel = addRecipeViewModel,
-                            onBack = { currentScreen = "recipes" },
+                            onBack = {
+                                addRecipeViewModel.resetState()
+                                currentScreen = "recipes"
+                            },
                             onSuccess = {
+                                addRecipeViewModel.resetState()
                                 currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
                             }

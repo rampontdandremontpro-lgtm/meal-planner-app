@@ -8,7 +8,20 @@ import { RecipesModule } from './recipes/recipes.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { ShoppingListModule } from './shopping-list/shopping-list.module';
 
-
+/**
+ * Module racine de l'application NestJS.
+ *
+ * Ce module centralise :
+ * - la configuration globale ;
+ * - la connexion à la base PostgreSQL ;
+ * - l'import des modules métiers.
+ *
+ * Rôle :
+ * - démarrer l'application ;
+ * - charger les variables d'environnement ;
+ * - initialiser TypeORM ;
+ * - brancher tous les modules fonctionnels du projet.
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

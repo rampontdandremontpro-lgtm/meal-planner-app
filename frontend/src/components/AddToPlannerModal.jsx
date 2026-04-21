@@ -8,7 +8,11 @@ const mealTypeOptions = [
 ];
 
 function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function AddToPlannerModal({
@@ -32,7 +36,7 @@ export default function AddToPlannerModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !recipe) return null;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -41,7 +45,8 @@ export default function AddToPlannerModal({
     setError("");
 
     try {
-      const normalizedSource = recipe.source === "external" ? "external" : "local";
+      const normalizedSource =
+        recipe.source === "external" ? "external" : "local";
 
       const payload = {
         date,
@@ -49,7 +54,7 @@ export default function AddToPlannerModal({
         source: normalizedSource,
         ...(normalizedSource === "external"
           ? { externalRecipeId: String(recipe.id) }
-          : { recipeId: recipe.id }),
+          : { recipeId: Number(recipe.id) }),
       };
 
       await createMealPlan(payload);
@@ -112,8 +117,8 @@ export default function AddToPlannerModal({
             </select>
           </label>
 
-          {message && <p className="success-message">{message}</p>}
-          {error && <p className="error-message">{error}</p>}
+          {message ? <p className="success-message">{message}</p> : null}
+          {error ? <p className="error-message">{error}</p> : null}
 
           <div className="modal-actions">
             <button

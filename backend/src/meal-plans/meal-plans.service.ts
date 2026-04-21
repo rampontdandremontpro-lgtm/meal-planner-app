@@ -21,12 +21,28 @@ export class MealPlansService {
   ) {}
 
   /**
-   * Crée un repas dans le planning.
-   * Empêche les doublons pour un même jour et un même type de repas.
+   * Crée un repas dans le planning hebdomadaire.
    *
-   * @param createMealPlanDto Données du meal plan
-   * @param userId Identifiant de l'utilisateur connecté
-   * @returns Meal plan formaté
+   * Cette méthode ajoute une entrée dans le planning de l'utilisateur
+   * pour une date et un type de repas donnés. Le repas peut être lié
+   * soit à une recette locale appartenant à l'utilisateur, soit à une
+   * recette externe identifiée par son identifiant TheMealDB.
+   *
+   * Règles métier :
+   * - un utilisateur ne peut avoir qu'un seul repas par date et type de repas ;
+   * - si la source est `local`, un `recipeId` est obligatoire ;
+   * - si la source est `external`, un `externalRecipeId` est obligatoire ;
+   * - une recette locale doit appartenir à l'utilisateur connecté ;
+   * - une recette externe doit exister dans la source externe.
+   *
+   * @param createMealPlanDto Données nécessaires à la création du meal plan.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns Le meal plan créé, formaté pour la réponse API.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   * @throws {NotFoundException} Si la recette locale ou externe demandée est introuvable.
+   * @throws {BadRequestException} Si un doublon existe déjà pour la même date
+   * et le même type de repas, ou si un identifiant obligatoire est manquant.
    */
   async create(createMealPlanDto: CreateMealPlanDto, userId: number) {
     const user = await this.usersService.findById(userId);
@@ -99,9 +115,21 @@ export class MealPlansService {
   /**
    * Récupère le planning complet de la semaine pour un utilisateur.
    *
-   * @param date Date de référence
-   * @param userId Identifiant utilisateur
-   * @returns Planning hebdomadaire
+   * Cette méthode calcule les bornes de la semaine à partir de la date
+   * fournie, puis recherche tous les meal plans de l'utilisateur dans
+   * cet intervalle. Chaque entrée est ensuite formatée pour être utilisable
+   * directement par le front.
+   *
+   * Règles métier :
+   * - seuls les meal plans du user demandé sont renvoyés ;
+   * - la semaine est calculée du lundi au dimanche ;
+   * - les recettes externes sont enrichies via le service de recettes ;
+   * - les recettes locales sont renvoyées dans un format harmonisé.
+   *
+   * @param date Date de référence utilisée pour calculer la semaine.
+   * @param userId Identifiant de l'utilisateur.
+   * @returns Un objet contenant le début de semaine, la fin de semaine
+   * et la liste des meal plans formatés.
    */
   async findWeek(date: string, userId: number) {
     const { startOfWeek, endOfWeek } = this.getWeekRange(date);
@@ -131,9 +159,21 @@ export class MealPlansService {
   /**
    * Supprime un meal plan appartenant à l'utilisateur connecté.
    *
-   * @param id Identifiant du meal plan
-   * @param userId Identifiant utilisateur
-   * @returns Message de confirmation
+   * Cette méthode vérifie qu'une entrée du planning correspond bien
+   * à l'identifiant fourni et à l'utilisateur authentifié avant
+   * de la supprimer définitivement.
+   *
+   * Règles métier :
+   * - un utilisateur ne peut supprimer que ses propres meal plans ;
+   * - si l'élément n'existe pas ou n'appartient pas au user,
+   *   il est considéré comme introuvable.
+   *
+   * @param id Identifiant du meal plan à supprimer.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns Un objet contenant un message de confirmation.
+   *
+   * @throws {NotFoundException} Si le meal plan est introuvable
+   * ou n'appartient pas à l'utilisateur connecté.
    */
   async remove(id: number, userId: number) {
     const mealPlan = await this.mealPlansRepository.findOne({
@@ -156,8 +196,18 @@ export class MealPlansService {
   /**
    * Formate un meal plan pour la réponse API.
    *
-   * @param mealPlan Entité meal plan
-   * @returns Objet formaté pour le front
+   * Cette méthode transforme l'entité meal plan en objet de réponse
+   * homogène pour le front. Si le repas est lié à une recette externe,
+   * le détail est récupéré via le service des recettes. Si le repas
+   * est lié à une recette locale, seules les données utiles sont exposées.
+   *
+   * Règles métier :
+   * - une recette externe est rechargée à partir de son identifiant externe ;
+   * - une recette locale est renvoyée dans un format simplifié ;
+   * - si aucune recette locale n'est associée, la valeur `recipe` vaut `null`.
+   *
+   * @param mealPlan Entité meal plan à formater.
+   * @returns Un objet prêt à être renvoyé au front.
    */
   private async formatMealPlan(mealPlan: MealPlan) {
     if (mealPlan.source === MealSource.EXTERNAL && mealPlan.externalRecipeId) {
@@ -199,8 +249,11 @@ export class MealPlansService {
   /**
    * Calcule le lundi et le dimanche de la semaine correspondant à la date donnée.
    *
-   * @param dateString Date de référence
-   * @returns Début et fin de semaine
+   * Cette méthode utilitaire convertit une date de référence en intervalle
+   * hebdomadaire complet, du lundi au dimanche, au format `YYYY-MM-DD`.
+   *
+   * @param dateString Date de référence.
+   * @returns Un objet contenant `startOfWeek` et `endOfWeek`.
    */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
@@ -220,10 +273,13 @@ export class MealPlansService {
   }
 
   /**
-   * Convertit une date au format YYYY-MM-DD.
+   * Convertit une date JavaScript au format `YYYY-MM-DD`.
    *
-   * @param date Date JS
-   * @returns Date formatée
+   * Cette méthode est utilisée pour harmoniser le format des dates
+   * manipulées dans le service, notamment pour les bornes de semaine.
+   *
+   * @param date Date JavaScript à convertir.
+   * @returns La date formatée sous forme de chaîne `YYYY-MM-DD`.
    */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();

@@ -280,7 +280,7 @@ private fun AddToPlanningDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val options = listOf("BREAKFAST", "LUNCH", "DINNER")
+                val options = listOf("Petit-Déjeuner", "Déjeuner", "Diner")
                 options.forEach { option ->
                     Row {
                         RadioButton(

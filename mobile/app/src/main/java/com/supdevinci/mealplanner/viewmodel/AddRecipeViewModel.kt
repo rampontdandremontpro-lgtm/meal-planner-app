@@ -29,12 +29,33 @@ class AddRecipeViewModel(
     private val _uiState = MutableStateFlow(AddRecipeUiState())
     val uiState: StateFlow<AddRecipeUiState> = _uiState
 
-    fun onTitleChange(value: String) { _uiState.value = _uiState.value.copy(title = value) }
-    fun onCategoryChange(value: String) { _uiState.value = _uiState.value.copy(category = value) }
-    fun onImageUrlChange(value: String) { _uiState.value = _uiState.value.copy(imageUrl = value) }
-    fun onPrepTimeChange(value: String) { _uiState.value = _uiState.value.copy(prepTime = value) }
-    fun onServingsChange(value: String) { _uiState.value = _uiState.value.copy(servings = value) }
-    fun onInstructionsChange(value: String) { _uiState.value = _uiState.value.copy(instructions = value) }
+    fun resetState() {
+        _uiState.value = AddRecipeUiState()
+    }
+
+    fun onTitleChange(value: String) {
+        _uiState.value = _uiState.value.copy(title = value)
+    }
+
+    fun onCategoryChange(value: String) {
+        _uiState.value = _uiState.value.copy(category = value)
+    }
+
+    fun onImageUrlChange(value: String) {
+        _uiState.value = _uiState.value.copy(imageUrl = value)
+    }
+
+    fun onPrepTimeChange(value: String) {
+        _uiState.value = _uiState.value.copy(prepTime = value)
+    }
+
+    fun onServingsChange(value: String) {
+        _uiState.value = _uiState.value.copy(servings = value)
+    }
+
+    fun onInstructionsChange(value: String) {
+        _uiState.value = _uiState.value.copy(instructions = value)
+    }
 
     fun updateIngredient(index: Int, name: String? = null, quantity: String? = null) {
         val updated = _uiState.value.ingredients.toMutableList()
@@ -55,6 +76,7 @@ class AddRecipeViewModel(
     fun removeIngredient(index: Int) {
         val current = _uiState.value.ingredients
         if (current.size == 1) return
+
         _uiState.value = _uiState.value.copy(
             ingredients = current.filterIndexed { i, _ -> i != index }
         )
@@ -64,12 +86,18 @@ class AddRecipeViewModel(
         val state = _uiState.value
 
         if (state.title.isBlank() || state.category.isBlank() || state.instructions.isBlank()) {
-            _uiState.value = state.copy(errorMessage = "Remplis les champs obligatoires.")
+            _uiState.value = state.copy(
+                errorMessage = "Remplis les champs obligatoires."
+            )
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = state.copy(isLoading = true, errorMessage = null)
+            _uiState.value = state.copy(
+                isLoading = true,
+                errorMessage = null,
+                isSuccess = false
+            )
 
             try {
                 val request = CreateRecipeRequest(
@@ -86,11 +114,13 @@ class AddRecipeViewModel(
 
                 _uiState.value = state.copy(
                     isLoading = false,
-                    isSuccess = true
+                    isSuccess = true,
+                    errorMessage = null
                 )
             } catch (e: Exception) {
                 _uiState.value = state.copy(
                     isLoading = false,
+                    isSuccess = false,
                     errorMessage = "Impossible de créer la recette."
                 )
             }

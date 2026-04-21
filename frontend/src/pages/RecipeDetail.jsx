@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddToPlannerModal from "../components/AddToPlannerModal";
-import { deleteRecipe, getRecipeById } from "../services/recipeService";
+import { getRecipeById, deleteRecipe } from "../services/recipeService";
 import { useAuth } from "../context/AuthContext";
 
 function getInstructionSteps(instructions) {
@@ -21,30 +21,49 @@ export default function RecipeDetail() {
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isPlannerModalOpen, setIsPlannerModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPlannerModalOpen, setIsPlannerModalOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function fetchRecipe() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getRecipeById(source, id);
+
+        if (isMounted) {
+          setRecipe(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(
+            err.response?.data?.message || "Impossible de charger la recette."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
     fetchRecipe();
+
+    return () => {
+      isMounted = false;
+    };
   }, [source, id]);
 
-  async function fetchRecipe() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const data = await getRecipeById(source, id);
-      setRecipe(data);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Impossible de charger la recette."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const steps = useMemo(() => {
+    return getInstructionSteps(recipe?.instructions);
+  }, [recipe]);
 
   async function handleDelete() {
+    if (!recipe || recipe.source !== "local") return;
+
     const confirmed = window.confirm(
       "Voulez-vous vraiment supprimer cette recette ?"
     );
@@ -53,6 +72,7 @@ export default function RecipeDetail() {
 
     try {
       setIsDeleting(true);
+      setError("");
       await deleteRecipe(recipe.id);
       navigate("/recipes");
     } catch (err) {
@@ -63,14 +83,6 @@ export default function RecipeDetail() {
       setIsDeleting(false);
     }
   }
-
-  const steps = useMemo(() => {
-    return getInstructionSteps(recipe?.instructions);
-  }, [recipe]);
-
-  const isLocalRecipe = recipe?.source === "local";
-  const canEditRecipe = isAuthenticated && isLocalRecipe;
-  const canDeleteRecipe = isAuthenticated && isLocalRecipe;
 
   if (loading) {
     return (
@@ -91,7 +103,7 @@ export default function RecipeDetail() {
   if (!recipe) {
     return (
       <div className="page-container">
-        <p>Recette introuvable.</p>
+        <p className="error-message">Recette introuvable.</p>
       </div>
     );
   }
@@ -104,9 +116,17 @@ export default function RecipeDetail() {
         </Link>
 
         <img
-          src={recipe.image}
+          src={
+            recipe.imageUrl ||
+            "https://via.placeholder.com/1200x600?text=Meal+Planner"
+          }
           alt={recipe.title}
           className="detail-hero-image"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src =
+              "https://via.placeholder.com/1200x600?text=Meal+Planner";
+          }}
         />
       </div>
 
@@ -117,19 +137,20 @@ export default function RecipeDetail() {
 
         <div className="detail-meta">
           <span>⏱ {recipe.prepTime || "—"}</span>
-          <span>👥 {recipe.servings} pers.</span>
+          <span>👥 {recipe.servings || 2} pers.</span>
           {recipe.source === "local" && <span>✨ Ma recette</span>}
         </div>
 
         <section className="detail-section">
           <h2>Ingrédients</h2>
           <ul className="ingredients-list">
-            {recipe.ingredients.map((ingredient, index) => (
+            {(recipe.ingredients || []).map((ingredient, index) => (
               <li key={index}>
                 <span className="ingredient-dot" />
                 <span>
-                  {ingredient.quantity ? `${ingredient.quantity} ` : ""}
-                  {ingredient.name}
+                  {[ingredient.quantity, ingredient.unit, ingredient.name]
+                    .filter(Boolean)
+                    .join(" ")}
                 </span>
               </li>
             ))}
@@ -153,31 +174,36 @@ export default function RecipeDetail() {
         </section>
 
         <div className="detail-actions">
-          <button
-            className="primary-button full-button"
-            onClick={() => setIsPlannerModalOpen(true)}
-          >
-            Ajouter au planning
-          </button>
-
-          {canEditRecipe && (
+          {isAuthenticated ? (
             <button
-              className="secondary-button full-button"
-              onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+              type="button"
+              className="primary-button full-button"
+              onClick={() => setIsPlannerModalOpen(true)}
             >
-              Modifier la recette
+              Ajouter au planning
             </button>
-          )}
+          ) : null}
 
-          {canDeleteRecipe && (
-            <button
-              className="danger-button full-button"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Suppression..." : "Supprimer la recette"}
-            </button>
-          )}
+          {isAuthenticated && recipe.source === "local" ? (
+            <>
+              <button
+                type="button"
+                className="secondary-button full-button"
+                onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+              >
+                Modifier la recette
+              </button>
+
+              <button
+                type="button"
+                className="danger-button full-button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Suppression..." : "Supprimer la recette"}
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -185,6 +211,7 @@ export default function RecipeDetail() {
         recipe={recipe}
         isOpen={isPlannerModalOpen}
         onClose={() => setIsPlannerModalOpen(false)}
+        onSuccess={() => {}}
       />
     </div>
   );

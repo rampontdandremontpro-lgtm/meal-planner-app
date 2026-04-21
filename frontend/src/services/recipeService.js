@@ -24,12 +24,12 @@ function extractIngredients(recipe) {
 
 function normalizeRecipe(recipe) {
   return {
-    id: recipe.id || recipe.idMeal,
+    id: String(recipe.id || recipe.idMeal || ""),
     title: recipe.title || recipe.strMeal || "Recette",
     category: recipe.category || recipe.strCategory || "Autre",
-    image:
-      recipe.image ||
+    imageUrl:
       recipe.imageUrl ||
+      recipe.image ||
       recipe.strMealThumb ||
       "https://via.placeholder.com/400x300?text=Meal+Planner",
     prepTime: recipe.prepTime || recipe.preparationTime || "",

@@ -1,26 +1,49 @@
 package com.supdevinci.mealplanner.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.supdevinci.mealplanner.viewmodel.AddRecipeViewModel
+
+private val ScreenBg = Color(0xFFF6F6F7)
+private val CardBg = Color.White
+private val BrandGreen = Color(0xFF4CAF50)
+private val MutedText = Color(0xFF667085)
+private val BorderColor = Color(0xFFD6D9DE)
+private val DangerBg = Color(0xFFFEE2E2)
+private val DangerText = Color(0xFFB91C1C)
+private val SecondaryBg = Color(0xFFEFF2F7)
 
 @Composable
 fun AddRecipeScreen(
@@ -31,121 +54,250 @@ fun AddRecipeScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) onSuccess()
+        if (uiState.isSuccess) {
+            onSuccess()
+        }
     }
 
-    Column(
+    Surface(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            .statusBarsPadding(),
+        color = ScreenBg
     ) {
-        TextButton(onClick = onBack) {
-            Text("← Retour")
-        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxSize(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    TextButton(onClick = onBack) {
+                        Text("← Retour")
+                    }
 
-        Text("Créer ma recette", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-        OutlinedTextField(
-            value = uiState.title,
-            onValueChange = viewModel::onTitleChange,
-            label = { Text("Titre") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    Text(
+                        text = "Créer ma recette",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = uiState.category,
-            onValueChange = viewModel::onCategoryChange,
-            label = { Text("Catégorie") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    Text(
+                        text = "Ajoute une recette personnalisée avec tes propres ingrédients",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MutedText
+                    )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(
-            value = uiState.imageUrl,
-            onValueChange = viewModel::onImageUrlChange,
-            label = { Text("Image URL") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    RecipeInput(
+                        value = uiState.title,
+                        onValueChange = viewModel::onTitleChange,
+                        label = "Titre"
+                    )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-        OutlinedTextField(
-            value = uiState.prepTime,
-            onValueChange = viewModel::onPrepTimeChange,
-            label = { Text("Temps de préparation") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    RecipeInput(
+                        value = uiState.category,
+                        onValueChange = viewModel::onCategoryChange,
+                        label = "Catégorie"
+                    )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-        OutlinedTextField(
-            value = uiState.servings,
-            onValueChange = viewModel::onServingsChange,
-            label = { Text("Nombre de personnes") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    RecipeInput(
+                        value = uiState.imageUrl,
+                        onValueChange = viewModel::onImageUrlChange,
+                        label = "Image URL"
+                    )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-        OutlinedTextField(
-            value = uiState.instructions,
-            onValueChange = viewModel::onInstructionsChange,
-            label = { Text("Instructions") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                    RecipeInput(
+                        value = uiState.prepTime,
+                        onValueChange = viewModel::onPrepTimeChange,
+                        label = "Temps de préparation"
+                    )
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Text("Ingrédients", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(14.dp))
 
-        uiState.ingredients.forEachIndexed { index, ingredient ->
-            Spacer(modifier = Modifier.height(12.dp))
+                    RecipeInput(
+                        value = uiState.servings,
+                        onValueChange = viewModel::onServingsChange,
+                        label = "Nombre de personnes"
+                    )
 
-            OutlinedTextField(
-                value = ingredient.name,
-                onValueChange = { viewModel.updateIngredient(index, name = it) },
-                label = { Text("Nom de l’ingrédient") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    Spacer(modifier = Modifier.height(14.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.instructions,
+                        onValueChange = viewModel::onInstructionsChange,
+                        label = { Text("Instructions") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 5,
+                        shape = RoundedCornerShape(18.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BorderColor,
+                            unfocusedBorderColor = BorderColor,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
 
-            OutlinedTextField(
-                value = ingredient.quantity,
-                onValueChange = { viewModel.updateIngredient(index, quantity = it) },
-                label = { Text("Quantité") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = Color(0xFFE5E7EB))
 
-            TextButton(onClick = { viewModel.removeIngredient(index) }) {
-                Text("Supprimer cet ingrédient")
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "Ingrédients",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Ajoute autant d’ingrédients que nécessaire",
+                        color = MutedText
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    uiState.ingredients.forEachIndexed { index, ingredient ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                RecipeInput(
+                                    value = ingredient.name,
+                                    onValueChange = {
+                                        viewModel.updateIngredient(index, name = it)
+                                    },
+                                    label = "Nom de l’ingrédient"
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                RecipeInput(
+                                    value = ingredient.quantity,
+                                    onValueChange = {
+                                        viewModel.updateIngredient(index, quantity = it)
+                                    },
+                                    label = "Quantité"
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Button(
+                                    onClick = { viewModel.removeIngredient(index) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = DangerBg,
+                                        contentColor = DangerText
+                                    )
+                                ) {
+                                    Text("Supprimer")
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    Button(
+                        onClick = { viewModel.addIngredient() },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SecondaryBg,
+                            contentColor = Color(0xFF111827)
+                        )
+                    ) {
+                        Text("+ Ajouter un ingrédient")
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    uiState.errorMessage?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    Button(
+                        onClick = { viewModel.submit() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        enabled = !uiState.isLoading,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandGreen)
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.height(20.dp)
+                            )
+                        } else {
+                            Text("Créer la recette")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = onBack,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Annuler", color = MutedText)
+                    }
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = { viewModel.addIngredient() }) {
-            Text("+ Ajouter un ingrédient")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        uiState.errorMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        Button(
-            onClick = { viewModel.submit() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (uiState.isLoading) "Création..." else "Créer la recette")
-        }
     }
+}
+
+@Composable
+private fun RecipeInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = BorderColor,
+            unfocusedBorderColor = BorderColor,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White
+        )
+    )
 }

@@ -22,9 +22,21 @@ export class RecipesService {
   /**
    * Crée une recette locale liée à l'utilisateur connecté.
    *
-   * @param createRecipeDto Données de la recette
-   * @param userId Identifiant de l'utilisateur connecté
-   * @returns Recette locale créée
+   * Cette méthode enregistre une nouvelle recette personnelle en base de données
+   * et la rattache à l'utilisateur authentifié. Les ingrédients reçus dans le DTO
+   * sont également persistés avec la recette.
+   *
+   * Règles métier :
+   * - seules les recettes locales sont créées ici ;
+   * - la recette est automatiquement associée à l'utilisateur connecté ;
+   * - les champs optionnels manquants sont remplacés par des valeurs par défaut ;
+   * - les ingrédients sont créés à partir des données envoyées par le front.
+   *
+   * @param createRecipeDto Données complètes de la recette à créer.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns La recette locale créée, formatée pour la réponse API.
+   *
+   * @throws {NotFoundException} Si l'utilisateur connecté est introuvable.
    */
   async create(createRecipeDto: CreateRecipeDto, userId: number) {
     const user = await this.usersService.findById(userId);
@@ -74,10 +86,22 @@ export class RecipesService {
   /**
    * Met à jour une recette locale appartenant à l'utilisateur connecté.
    *
-   * @param id Identifiant de la recette
-   * @param updateRecipeDto Nouvelles données
-   * @param userId Identifiant de l'utilisateur connecté
-   * @returns Recette mise à jour
+   * Cette méthode recherche d'abord la recette locale de l'utilisateur,
+   * supprime les anciens ingrédients enregistrés, puis remplace entièrement
+   * les données de la recette par celles transmises dans le DTO.
+   *
+   * Règles métier :
+   * - seule une recette locale appartenant à l'utilisateur peut être modifiée ;
+   * - les anciens ingrédients sont supprimés avant l'enregistrement des nouveaux ;
+   * - les recettes externes ne sont jamais modifiées dans cette méthode.
+   *
+   * @param id Identifiant de la recette locale à mettre à jour.
+   * @param updateRecipeDto Nouvelles données de la recette.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns La recette locale mise à jour et formatée pour la réponse API.
+   *
+   * @throws {NotFoundException} Si la recette locale est introuvable
+   * ou n'appartient pas à l'utilisateur connecté.
    */
   async update(id: number, updateRecipeDto: UpdateRecipeDto, userId: number) {
     const recipe = await this.recipesRepository.findOne({
@@ -134,9 +158,21 @@ export class RecipesService {
   /**
    * Supprime une recette locale appartenant à l'utilisateur connecté.
    *
-   * @param id Identifiant de la recette
-   * @param userId Identifiant de l'utilisateur connecté
-   * @returns Message de confirmation
+   * Cette méthode vérifie que la recette existe bien et qu'elle appartient
+   * à l'utilisateur authentifié avant de la supprimer définitivement.
+   *
+   * Règles métier :
+   * - seule une recette locale du user connecté peut être supprimée ;
+   * - les recettes externes ne sont jamais concernées ;
+   * - si la recette n'existe pas ou n'appartient pas au user,
+   *   elle est considérée comme introuvable.
+   *
+   * @param id Identifiant de la recette locale à supprimer.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns Un objet contenant un message de confirmation.
+   *
+   * @throws {NotFoundException} Si la recette locale est introuvable
+   * ou n'appartient pas à l'utilisateur connecté.
    */
   async remove(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
@@ -159,12 +195,21 @@ export class RecipesService {
   }
 
   /**
-   * Récupère les recettes externes et, si l'utilisateur est connecté,
-   * ajoute aussi ses recettes locales.
+   * Récupère les recettes visibles pour le contexte courant.
    *
-   * @param search Mot-clé de recherche
-   * @param userId Identifiant de l'utilisateur connecté
-   * @returns Liste fusionnée des recettes
+   * Cette méthode interroge toujours TheMealDB pour obtenir les recettes externes.
+   * Si un utilisateur est authentifié, ses recettes locales sont également
+   * récupérées puis fusionnées avec les recettes externes.
+   *
+   * Règles métier :
+   * - sans utilisateur connecté : seules les recettes externes sont renvoyées ;
+   * - avec utilisateur connecté : les recettes externes et locales sont renvoyées ;
+   * - le paramètre `search` est appliqué aux recherches externes et locales.
+   *
+   * @param search Mot-clé de recherche optionnel.
+   * @param userId Identifiant de l'utilisateur connecté, s'il existe.
+   * @returns Une liste de recettes externes uniquement, ou une liste fusionnée
+   * avec les recettes locales de l'utilisateur connecté.
    */
   async findAll(search?: string, userId?: number) {
     const externalRecipes = await this.theMealDbService.searchMeals(search);
@@ -181,9 +226,19 @@ export class RecipesService {
   /**
    * Récupère les recettes locales de l'utilisateur connecté.
    *
-   * @param userId Identifiant utilisateur
-   * @param search Mot-clé de recherche
-   * @returns Liste des recettes locales
+   * Cette méthode construit une requête sur les recettes locales stockées
+   * en base de données et limite les résultats aux recettes appartenant
+   * à l'utilisateur concerné. Un filtre textuel peut être appliqué
+   * sur le titre ou la catégorie.
+   *
+   * Règles métier :
+   * - seules les recettes locales de l'utilisateur demandé sont renvoyées ;
+   * - la recherche porte sur le titre et la catégorie ;
+   * - les résultats sont triés par date de création décroissante.
+   *
+   * @param userId Identifiant de l'utilisateur.
+   * @param search Mot-clé de recherche optionnel.
+   * @returns La liste des recettes locales de l'utilisateur.
    */
   async findLocalRecipesForUser(userId: number, search?: string) {
     const queryBuilder = this.recipesRepository
@@ -225,9 +280,20 @@ export class RecipesService {
   /**
    * Récupère une recette locale appartenant à l'utilisateur connecté.
    *
-   * @param id Identifiant recette
-   * @param userId Identifiant utilisateur
-   * @returns Détail recette locale
+   * Cette méthode permet d'obtenir le détail complet d'une recette locale
+   * uniquement si elle appartient à l'utilisateur demandé.
+   *
+   * Règles métier :
+   * - une recette locale d'un autre utilisateur ne doit pas être renvoyée ;
+   * - si la recette n'existe pas ou n'appartient pas au user,
+   *   elle est considérée comme introuvable.
+   *
+   * @param id Identifiant de la recette locale.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns Le détail complet de la recette locale formatée pour l'API.
+   *
+   * @throws {NotFoundException} Si la recette locale est introuvable
+   * ou n'appartient pas à l'utilisateur connecté.
    */
   async findOneLocalForUser(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
@@ -263,10 +329,19 @@ export class RecipesService {
   }
 
   /**
-   * Récupère l'entité locale complète par id.
+   * Récupère l'entité locale complète d'une recette par son identifiant.
    *
-   * @param id Identifiant recette
-   * @returns Entité recette
+   * Cette méthode renvoie l'entité TypeORM complète, avec ses relations utiles,
+   * sans filtrer sur l'utilisateur propriétaire.
+   *
+   * Règles métier :
+   * - elle est utile pour des traitements internes ;
+   * - elle ne doit être utilisée que lorsque l'on a besoin de l'entité complète.
+   *
+   * @param id Identifiant de la recette locale.
+   * @returns L'entité complète de la recette locale.
+   *
+   * @throws {NotFoundException} Si la recette locale est introuvable.
    */
   async findLocalEntityById(id: number) {
     const recipe = await this.recipesRepository.findOne({
@@ -282,11 +357,22 @@ export class RecipesService {
   }
 
   /**
-   * Vérifie qu'une recette locale appartient bien à l'utilisateur.
+   * Vérifie qu'une recette locale appartient bien à l'utilisateur demandé.
    *
-   * @param id Identifiant recette
-   * @param userId Identifiant utilisateur
-   * @returns Entité recette autorisée
+   * Cette méthode est utilisée comme garde métier dans d'autres services,
+   * notamment avant l'ajout d'une recette locale dans un meal plan.
+   *
+   * Règles métier :
+   * - la recette doit exister ;
+   * - la recette doit appartenir à l'utilisateur indiqué ;
+   * - si ce n'est pas le cas, elle est considérée comme introuvable.
+   *
+   * @param id Identifiant de la recette locale.
+   * @param userId Identifiant de l'utilisateur.
+   * @returns L'entité recette autorisée pour cet utilisateur.
+   *
+   * @throws {NotFoundException} Si la recette locale est introuvable
+   * ou n'appartient pas à l'utilisateur demandé.
    */
   async ensureLocalRecipeBelongsToUser(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
@@ -307,8 +393,18 @@ export class RecipesService {
   /**
    * Récupère une recette externe via TheMealDB.
    *
-   * @param id Identifiant externe
-   * @returns Détail recette externe
+   * Cette méthode appelle le service externe chargé d'interroger TheMealDB
+   * afin d'obtenir le détail d'une recette publique à partir de son identifiant.
+   *
+   * Règles métier :
+   * - seules les recettes externes sont concernées ;
+   * - la réponse est harmonisée par le service TheMealDbService ;
+   * - si aucun résultat n'est trouvé, une exception est levée.
+   *
+   * @param id Identifiant externe de la recette.
+   * @returns Le détail de la recette externe.
+   *
+   * @throws {NotFoundException} Si la recette externe est introuvable.
    */
   async findExternalById(id: string) {
     const recipe = await this.theMealDbService.findMealById(id);
