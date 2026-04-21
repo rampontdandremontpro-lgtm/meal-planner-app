@@ -41,6 +41,10 @@ class LoginViewModel(
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
+    fun resetState() {
+        _uiState.value = LoginUiState()
+    }
+
     fun login() {
         val email = _uiState.value.email.trim()
         val password = _uiState.value.password.trim()

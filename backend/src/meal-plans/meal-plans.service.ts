@@ -20,6 +20,14 @@ export class MealPlansService {
     private readonly recipesService: RecipesService,
   ) {}
 
+  /**
+   * Crée un repas dans le planning.
+   * Empêche les doublons pour un même jour et un même type de repas.
+   *
+   * @param createMealPlanDto Données du meal plan
+   * @param userId Identifiant de l'utilisateur connecté
+   * @returns Meal plan formaté
+   */
   async create(createMealPlanDto: CreateMealPlanDto, userId: number) {
     const user = await this.usersService.findById(userId);
 
@@ -88,6 +96,13 @@ export class MealPlansService {
     return await this.formatMealPlan(savedMealPlan);
   }
 
+  /**
+   * Récupère le planning complet de la semaine pour un utilisateur.
+   *
+   * @param date Date de référence
+   * @param userId Identifiant utilisateur
+   * @returns Planning hebdomadaire
+   */
   async findWeek(date: string, userId: number) {
     const { startOfWeek, endOfWeek } = this.getWeekRange(date);
 
@@ -113,6 +128,13 @@ export class MealPlansService {
     };
   }
 
+  /**
+   * Supprime un meal plan appartenant à l'utilisateur connecté.
+   *
+   * @param id Identifiant du meal plan
+   * @param userId Identifiant utilisateur
+   * @returns Message de confirmation
+   */
   async remove(id: number, userId: number) {
     const mealPlan = await this.mealPlansRepository.findOne({
       where: {
@@ -131,6 +153,12 @@ export class MealPlansService {
     return { message: 'Meal plan deleted' };
   }
 
+  /**
+   * Formate un meal plan pour la réponse API.
+   *
+   * @param mealPlan Entité meal plan
+   * @returns Objet formaté pour le front
+   */
   private async formatMealPlan(mealPlan: MealPlan) {
     if (mealPlan.source === MealSource.EXTERNAL && mealPlan.externalRecipeId) {
       const externalRecipe = await this.recipesService.findExternalById(
@@ -168,6 +196,12 @@ export class MealPlansService {
     };
   }
 
+  /**
+   * Calcule le lundi et le dimanche de la semaine correspondant à la date donnée.
+   *
+   * @param dateString Date de référence
+   * @returns Début et fin de semaine
+   */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
     const day = date.getDay();
@@ -185,6 +219,12 @@ export class MealPlansService {
     };
   }
 
+  /**
+   * Convertit une date au format YYYY-MM-DD.
+   *
+   * @param date Date JS
+   * @returns Date formatée
+   */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

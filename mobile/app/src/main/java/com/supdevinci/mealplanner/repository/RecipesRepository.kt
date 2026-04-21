@@ -17,4 +17,12 @@ class RecipesRepository {
     suspend fun createRecipe(request: CreateRecipeRequest): Recipe {
         return RetrofitClient.recipesApi.createRecipe(request)
     }
+
+    suspend fun updateRecipe(id: String, request: CreateRecipeRequest): Recipe {
+        return RetrofitClient.recipesApi.updateRecipe(id, request)
+    }
+
+    suspend fun deleteRecipe(id: String) {
+        RetrofitClient.recipesApi.deleteRecipe(id)
+    }
 }

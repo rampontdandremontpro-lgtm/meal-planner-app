@@ -19,6 +19,13 @@ export class RecipesService {
     private readonly theMealDbService: TheMealDbService,
   ) {}
 
+  /**
+   * Crée une recette locale liée à l'utilisateur connecté.
+   *
+   * @param createRecipeDto Données de la recette
+   * @param userId Identifiant de l'utilisateur connecté
+   * @returns Recette locale créée
+   */
   async create(createRecipeDto: CreateRecipeDto, userId: number) {
     const user = await this.usersService.findById(userId);
 
@@ -64,6 +71,14 @@ export class RecipesService {
     };
   }
 
+  /**
+   * Met à jour une recette locale appartenant à l'utilisateur connecté.
+   *
+   * @param id Identifiant de la recette
+   * @param updateRecipeDto Nouvelles données
+   * @param userId Identifiant de l'utilisateur connecté
+   * @returns Recette mise à jour
+   */
   async update(id: number, updateRecipeDto: UpdateRecipeDto, userId: number) {
     const recipe = await this.recipesRepository.findOne({
       where: {
@@ -116,6 +131,13 @@ export class RecipesService {
     };
   }
 
+  /**
+   * Supprime une recette locale appartenant à l'utilisateur connecté.
+   *
+   * @param id Identifiant de la recette
+   * @param userId Identifiant de l'utilisateur connecté
+   * @returns Message de confirmation
+   */
   async remove(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
       where: {
@@ -136,6 +158,14 @@ export class RecipesService {
     };
   }
 
+  /**
+   * Récupère les recettes externes et, si l'utilisateur est connecté,
+   * ajoute aussi ses recettes locales.
+   *
+   * @param search Mot-clé de recherche
+   * @param userId Identifiant de l'utilisateur connecté
+   * @returns Liste fusionnée des recettes
+   */
   async findAll(search?: string, userId?: number) {
     const externalRecipes = await this.theMealDbService.searchMeals(search);
 
@@ -148,6 +178,13 @@ export class RecipesService {
     return [...externalRecipes, ...localRecipes];
   }
 
+  /**
+   * Récupère les recettes locales de l'utilisateur connecté.
+   *
+   * @param userId Identifiant utilisateur
+   * @param search Mot-clé de recherche
+   * @returns Liste des recettes locales
+   */
   async findLocalRecipesForUser(userId: number, search?: string) {
     const queryBuilder = this.recipesRepository
       .createQueryBuilder('recipe')
@@ -185,6 +222,13 @@ export class RecipesService {
     }));
   }
 
+  /**
+   * Récupère une recette locale appartenant à l'utilisateur connecté.
+   *
+   * @param id Identifiant recette
+   * @param userId Identifiant utilisateur
+   * @returns Détail recette locale
+   */
   async findOneLocalForUser(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
       where: {
@@ -218,6 +262,12 @@ export class RecipesService {
     };
   }
 
+  /**
+   * Récupère l'entité locale complète par id.
+   *
+   * @param id Identifiant recette
+   * @returns Entité recette
+   */
   async findLocalEntityById(id: number) {
     const recipe = await this.recipesRepository.findOne({
       where: { id },
@@ -231,6 +281,13 @@ export class RecipesService {
     return recipe;
   }
 
+  /**
+   * Vérifie qu'une recette locale appartient bien à l'utilisateur.
+   *
+   * @param id Identifiant recette
+   * @param userId Identifiant utilisateur
+   * @returns Entité recette autorisée
+   */
   async ensureLocalRecipeBelongsToUser(id: number, userId: number) {
     const recipe = await this.recipesRepository.findOne({
       where: {
@@ -247,6 +304,12 @@ export class RecipesService {
     return recipe;
   }
 
+  /**
+   * Récupère une recette externe via TheMealDB.
+   *
+   * @param id Identifiant externe
+   * @returns Détail recette externe
+   */
   async findExternalById(id: string) {
     const recipe = await this.theMealDbService.findMealById(id);
 

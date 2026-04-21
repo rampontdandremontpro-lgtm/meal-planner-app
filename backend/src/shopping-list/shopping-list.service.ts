@@ -3,7 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ShoppingItem } from './entities/shopping-item.entity';
 import { CreateShoppingItemDto } from './dto/create-shopping-item.dto';
 import { UpdateShoppingItemDto } from './dto/update-shopping-item.dto';
@@ -19,6 +19,16 @@ export class ShoppingListService {
     private readonly mealPlansService: MealPlansService,
   ) {}
 
+  /**
+   * Récupère la liste de courses de la semaine.
+   * Elle fusionne :
+   * - les ingrédients automatiques issus du planning
+   * - les ingrédients manuels stockés en base
+   *
+   * @param date Date de référence
+   * @param userId Identifiant utilisateur
+   * @returns Liste de courses hebdomadaire
+   */
   async findWeek(date: string, userId: number) {
     const user = await this.usersService.findById(userId);
 
@@ -30,7 +40,10 @@ export class ShoppingListService {
 
     const weekMealPlans = await this.mealPlansService.findWeek(date, userId);
 
-    const automaticItems = this.extractAutomaticItems(weekMealPlans.items, startOfWeek);
+    const automaticItems = this.extractAutomaticItems(
+      weekMealPlans.items,
+      startOfWeek,
+    );
 
     const manualItems = await this.shoppingItemsRepository.find({
       where: {
@@ -61,7 +74,17 @@ export class ShoppingListService {
     };
   }
 
-  async createManualItem(createShoppingItemDto: CreateShoppingItemDto, userId: number) {
+  /**
+   * Ajoute un ingrédient manuel à la liste de courses.
+   *
+   * @param createShoppingItemDto Données de l'ingrédient
+   * @param userId Identifiant utilisateur
+   * @returns Item créé
+   */
+  async createManualItem(
+    createShoppingItemDto: CreateShoppingItemDto,
+    userId: number,
+  ) {
     const user = await this.usersService.findById(userId);
 
     if (!user) {
@@ -83,7 +106,19 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
-  async updateItem(id: number, updateShoppingItemDto: UpdateShoppingItemDto, userId: number) {
+  /**
+   * Met à jour l'état checked d'un ingrédient manuel.
+   *
+   * @param id Identifiant item
+   * @param updateShoppingItemDto Nouveau statut
+   * @param userId Identifiant utilisateur
+   * @returns Item mis à jour
+   */
+  async updateItem(
+    id: number,
+    updateShoppingItemDto: UpdateShoppingItemDto,
+    userId: number,
+  ) {
     const item = await this.shoppingItemsRepository.findOne({
       where: {
         id,
@@ -101,6 +136,13 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
+  /**
+   * Supprime un ingrédient manuel appartenant à l'utilisateur.
+   *
+   * @param id Identifiant item
+   * @param userId Identifiant utilisateur
+   * @returns Message de confirmation
+   */
   async removeItem(id: number, userId: number) {
     const item = await this.shoppingItemsRepository.findOne({
       where: {
@@ -121,10 +163,14 @@ export class ShoppingListService {
     };
   }
 
-  private extractAutomaticItems(
-    mealPlans: any[],
-    weekStart: string,
-  ) {
+  /**
+   * Extrait les ingrédients automatiques à partir du planning.
+   *
+   * @param mealPlans Liste des repas de la semaine
+   * @param weekStart Début de semaine
+   * @returns Liste d'items automatiques
+   */
+  private extractAutomaticItems(mealPlans: any[], weekStart: string) {
     const items: any[] = [];
 
     for (const mealPlan of mealPlans) {
@@ -147,6 +193,12 @@ export class ShoppingListService {
     return items;
   }
 
+  /**
+   * Calcule le début et la fin de semaine à partir d'une date.
+   *
+   * @param dateString Date de référence
+   * @returns Début et fin de semaine
+   */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
     const day = date.getDay();
@@ -164,6 +216,12 @@ export class ShoppingListService {
     };
   }
 
+  /**
+   * Convertit une date au format YYYY-MM-DD.
+   *
+   * @param date Date JS
+   * @returns Date formatée
+   */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
