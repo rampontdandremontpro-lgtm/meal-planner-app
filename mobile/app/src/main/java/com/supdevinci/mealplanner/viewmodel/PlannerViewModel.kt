@@ -35,14 +35,16 @@ class PlannerViewModel(
 
             try {
                 val items = plannerRepository.getWeekMealPlans(date.toString())
+
                 _uiState.value = _uiState.value.copy(
                     items = items,
-                    isLoading = false
+                    isLoading = false,
+                    errorMessage = null
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Impossible de charger le planning."
+                    errorMessage = e.message ?: "Impossible de charger le planning."
                 )
             }
         }
@@ -61,7 +63,8 @@ class PlannerViewModel(
         mealType: String,
         recipeId: String,
         source: String,
-        onSuccess: () -> Unit = {}
+        onSuccess: (() -> Unit)? = null,
+        onError: ((String) -> Unit)? = null
     ) {
         viewModelScope.launch {
             try {
@@ -72,13 +75,14 @@ class PlannerViewModel(
                     recipeId = if (source == "local") recipeId.toIntOrNull() else null,
                     externalRecipeId = if (source == "external") recipeId else null
                 )
+
                 plannerRepository.createMealPlan(request)
                 loadWeek(_uiState.value.weekStart)
-                onSuccess()
+                onSuccess?.invoke()
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = "Impossible d’ajouter au planning."
-                )
+                val message = e.message ?: "Impossible d’ajouter au planning."
+                _uiState.value = _uiState.value.copy(errorMessage = message)
+                onError?.invoke(message)
             }
         }
     }
@@ -90,7 +94,7 @@ class PlannerViewModel(
                 loadWeek(_uiState.value.weekStart)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = "Impossible de retirer cette recette."
+                    errorMessage = e.message ?: "Impossible de retirer cette recette."
                 )
             }
         }

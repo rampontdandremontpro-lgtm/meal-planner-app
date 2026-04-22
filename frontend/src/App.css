@@ -778,3 +778,130 @@ select {
     font-size: 30px;
   }
 }
+
+.shopping-summary-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+
+.shopping-summary-card p {
+  margin: 0;
+  color: #667085;
+  font-weight: 600;
+}
+
+.shopping-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.shopping-input-row input {
+  flex: 1;
+  min-height: 54px;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  padding: 0 18px;
+  font-size: 1rem;
+  background: #ffffff;
+  outline: none;
+}
+
+.shopping-input-row input:focus {
+  border-color: #4caf50;
+}
+
+.shopping-list-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.shopping-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f2f4;
+}
+
+.shopping-item-row:last-child {
+  border-bottom: none;
+}
+
+.shopping-item-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.shopping-item-left input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4caf50;
+  cursor: pointer;
+}
+
+.shopping-item-text {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.shopping-item-text.checked {
+  color: #98a2b3;
+  text-decoration: line-through;
+}
+
+.small-danger-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 768px) {
+  .shopping-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shopping-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shopping-item-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .small-danger-button {
+    width: 100%;
+  }
+}
+
+.shopping-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: #eef2f7;
+  color: #667085;
+  font-weight: 700;
+  font-size: 0.92rem;
+}

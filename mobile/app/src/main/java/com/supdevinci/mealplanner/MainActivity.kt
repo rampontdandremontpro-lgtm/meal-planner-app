@@ -23,7 +23,22 @@ import com.supdevinci.mealplanner.ui.screens.RegisterScreen
 import com.supdevinci.mealplanner.ui.screens.ShoppingPlaceholderScreen
 import com.supdevinci.mealplanner.ui.screens.SplashScreen
 import com.supdevinci.mealplanner.ui.theme.MealPlannerTheme
-import com.supdevinci.mealplanner.viewmodel.*
+import com.supdevinci.mealplanner.viewmodel.AddRecipeViewModel
+import com.supdevinci.mealplanner.viewmodel.AddRecipeViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.EditRecipeViewModel
+import com.supdevinci.mealplanner.viewmodel.EditRecipeViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.LoginViewModel
+import com.supdevinci.mealplanner.viewmodel.LoginViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.PlannerViewModel
+import com.supdevinci.mealplanner.viewmodel.PlannerViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.RecipeActionsViewModel
+import com.supdevinci.mealplanner.viewmodel.RecipeActionsViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.RecipeDetailViewModel
+import com.supdevinci.mealplanner.viewmodel.RecipeDetailViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.RecipesViewModel
+import com.supdevinci.mealplanner.viewmodel.RecipesViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.RegisterViewModel
+import com.supdevinci.mealplanner.viewmodel.RegisterViewModelFactory
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -37,6 +52,13 @@ class MainActivity : ComponentActivity() {
         val recipesRepository = RecipesRepository()
         val plannerRepository = PlannerRepository()
         val tokenManager = TokenManager(applicationContext)
+
+        // ✅ IMPORTANT :
+        // à chaque relance de l'application, on efface le token
+        // pour revenir automatiquement en mode non connecté
+        lifecycleScope.launch {
+            tokenManager.clearToken()
+        }
 
         val loginViewModel = ViewModelProvider(
             this,
@@ -87,6 +109,14 @@ class MainActivity : ComponentActivity() {
                 var isAuthenticated by remember { mutableStateOf(false) }
                 var currentUserName by remember { mutableStateOf<String?>(null) }
 
+                LaunchedEffect(Unit) {
+                    // ✅ toujours démarrer déconnecté
+                    isAuthenticated = false
+                    currentUserName = null
+                    loginViewModel.resetState()
+                    recipesViewModel.loadRecipes()
+                }
+
                 Column {
                     val showTopBar = currentScreen !in listOf("splash", "login", "register")
 
@@ -95,8 +125,12 @@ class MainActivity : ComponentActivity() {
                             currentScreen = currentScreen,
                             isAuthenticated = isAuthenticated,
                             onRecipesClick = { currentScreen = "recipes" },
-                            onPlanningClick = { if (isAuthenticated) currentScreen = "planning" },
-                            onShoppingClick = { if (isAuthenticated) currentScreen = "shopping" },
+                            onPlanningClick = {
+                                if (isAuthenticated) currentScreen = "planning"
+                            },
+                            onShoppingClick = {
+                                if (isAuthenticated) currentScreen = "shopping"
+                            },
                             onLoginClick = {
                                 loginViewModel.resetState()
                                 currentScreen = "login"
@@ -108,7 +142,7 @@ class MainActivity : ComponentActivity() {
                                 loginViewModel.resetState()
                                 isAuthenticated = false
                                 currentUserName = null
-                                currentScreen = "login"
+                                currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
                             }
                         )
@@ -148,6 +182,7 @@ class MainActivity : ComponentActivity() {
                                     loginViewModel.uiState.value.userFirstName ?: "utilisateur"
                                 currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
+                                plannerViewModel.loadWeek()
                             },
                             onGoToRegister = { currentScreen = "register" }
                         )

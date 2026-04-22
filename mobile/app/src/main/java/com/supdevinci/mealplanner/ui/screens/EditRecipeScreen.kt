@@ -98,12 +98,6 @@ fun EditRecipeScreen(
                             .padding(20.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
-                        TextButton(onClick = onBack) {
-                            Text("← Retour")
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
                         Text(
                             text = "Modifier ma recette",
                             style = MaterialTheme.typography.headlineMedium,
@@ -186,13 +180,6 @@ fun EditRecipeScreen(
                             text = "Ingrédients",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "Modifie, ajoute ou supprime les ingrédients",
-                            color = MutedText
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -278,22 +265,6 @@ fun EditRecipeScreen(
                             } else {
                                 Text("Enregistrer les modifications")
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = { viewModel.deleteRecipe() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = DangerBg,
-                                contentColor = DangerText
-                            )
-                        ) {
-                            Text("Supprimer la recette")
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
