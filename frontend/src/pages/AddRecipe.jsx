@@ -1,7 +1,19 @@
+/**
+ * @file AddRecipe.jsx
+ * @description Page de création d'une recette personnalisée.
+ * Gère le formulaire principal, la liste dynamique des ingrédients et
+ * l'envoi des données au backend avant redirection.
+ */
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createRecipe } from "../services/recipeService";
 
+/**
+ * Rend la page de création d'une recette locale.
+ *
+ * @returns {JSX.Element} Formulaire complet de création.
+ */
 export default function AddRecipe() {
   const navigate = useNavigate();
 
@@ -19,6 +31,12 @@ export default function AddRecipe() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Met à jour un champ simple du formulaire.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>} e Événement de saisie.
+   * @returns {void}
+   */
   function handleChange(e) {
     setForm({
       ...form,
@@ -26,20 +44,45 @@ export default function AddRecipe() {
     });
   }
 
+  /**
+   * Met à jour un ingrédient dans la liste dynamique.
+   *
+   * @param {number} index Position de l'ingrédient.
+   * @param {string} field Champ ciblé.
+   * @param {string} value Nouvelle valeur.
+   * @returns {void}
+   */
   function handleIngredientChange(index, field, value) {
     const updated = [...ingredients];
     updated[index][field] = value;
     setIngredients(updated);
   }
 
+  /**
+   * Ajoute une ligne d'ingrédient vide.
+   *
+   * @returns {void}
+   */
   function addIngredientRow() {
     setIngredients([...ingredients, { name: "", quantity: "" }]);
   }
 
+  /**
+   * Supprime une ligne d'ingrédient par son index.
+   *
+   * @param {number} index Position à supprimer.
+   * @returns {void}
+   */
   function removeIngredientRow(index) {
     setIngredients(ingredients.filter((_, i) => i !== index));
   }
 
+  /**
+   * Soumet la nouvelle recette au backend.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e Événement de soumission.
+   * @returns {Promise<void>} Promesse de création.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);

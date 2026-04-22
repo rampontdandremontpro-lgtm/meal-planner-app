@@ -1,7 +1,19 @@
+/**
+ * @file Register.jsx
+ * @description Page d'inscription utilisateur.
+ * Collecte les informations du formulaire, appelle l'API d'inscription et
+ * redirige ensuite vers la page de connexion après succès.
+ */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+/**
+ * Rend la page d'inscription.
+ *
+ * @returns {JSX.Element} Formulaire de création de compte.
+ */
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -17,6 +29,12 @@ export default function Register() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Met à jour un champ du formulaire d'inscription.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e Événement de saisie.
+   * @returns {void}
+   */
   function handleChange(e) {
     setForm({
       ...form,
@@ -24,6 +42,12 @@ export default function Register() {
     });
   }
 
+  /**
+   * Envoie les données d'inscription au backend.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e Événement de soumission.
+   * @returns {Promise<void>} Promesse d'inscription.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");

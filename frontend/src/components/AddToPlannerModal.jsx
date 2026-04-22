@@ -1,12 +1,29 @@
+/**
+ * @file AddToPlannerModal.jsx
+ * @description Fenêtre modale permettant d'ajouter une recette au planning.
+ * Le composant prépare la date et le type de repas, construit le payload
+ * attendu par l'API puis déclenche la création d'un meal plan.
+ */
+
 import { useEffect, useState } from "react";
 import { createMealPlan } from "../services/plannerService";
 
+/**
+ * Options de types de repas proposées dans le formulaire.
+ *
+ * @type {{value: string, label: string}[]}
+ */
 const mealTypeOptions = [
   { value: "BREAKFAST", label: "Petit-déjeuner" },
   { value: "LUNCH", label: "Déjeuner" },
   { value: "DINNER", label: "Dîner" },
 ];
 
+/**
+ * Construit la date du jour au format YYYY-MM-DD.
+ *
+ * @returns {string} Date du jour compatible avec un champ HTML de type date.
+ */
 function getTodayDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -15,6 +32,16 @@ function getTodayDate() {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Affiche une modale d'ajout d'une recette au planning.
+ *
+ * @param {Object} props Propriétés du composant.
+ * @param {Object|null} props.recipe Recette à planifier.
+ * @param {boolean} props.isOpen Indique si la modale est visible.
+ * @param {() => void} props.onClose Callback de fermeture.
+ * @param {() => void} [props.onSuccess] Callback appelé après succès.
+ * @returns {JSX.Element|null} Modale affichée ou `null` si fermée.
+ */
 export default function AddToPlannerModal({
   recipe,
   isOpen,
@@ -38,6 +65,12 @@ export default function AddToPlannerModal({
 
   if (!isOpen || !recipe) return null;
 
+  /**
+   * Soumet le formulaire d'ajout au planning.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e Événement de soumission.
+   * @returns {Promise<void>} Promesse résolue une fois la requête terminée.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);

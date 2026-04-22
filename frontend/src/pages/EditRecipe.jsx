@@ -1,7 +1,19 @@
+/**
+ * @file EditRecipe.jsx
+ * @description Page d'édition d'une recette locale existante.
+ * Charge la recette ciblée, pré-remplit le formulaire puis envoie les
+ * modifications à l'API.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRecipeById, updateRecipe } from "../services/recipeService";
 
+/**
+ * Rend la page de modification d'une recette locale.
+ *
+ * @returns {JSX.Element} Formulaire d'édition pré-rempli.
+ */
 export default function EditRecipe() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,6 +37,11 @@ export default function EditRecipe() {
     fetchRecipe();
   }, [id]);
 
+  /**
+   * Charge la recette locale à modifier.
+   *
+   * @returns {Promise<void>} Promesse de récupération des données.
+   */
   async function fetchRecipe() {
     setLoadingRecipe(true);
     setError("");
@@ -61,6 +78,12 @@ export default function EditRecipe() {
     }
   }
 
+  /**
+   * Met à jour un champ simple du formulaire.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>} e Événement de saisie.
+   * @returns {void}
+   */
   function handleChange(e) {
     setForm({
       ...form,
@@ -68,20 +91,45 @@ export default function EditRecipe() {
     });
   }
 
+  /**
+   * Met à jour un ingrédient existant.
+   *
+   * @param {number} index Index de la ligne.
+   * @param {string} field Champ ciblé.
+   * @param {string} value Nouvelle valeur.
+   * @returns {void}
+   */
   function handleIngredientChange(index, field, value) {
     const updated = [...ingredients];
     updated[index][field] = value;
     setIngredients(updated);
   }
 
+  /**
+   * Ajoute une ligne d'ingrédient vide.
+   *
+   * @returns {void}
+   */
   function addIngredientRow() {
     setIngredients([...ingredients, { name: "", quantity: "" }]);
   }
 
+  /**
+   * Supprime une ligne d'ingrédient.
+   *
+   * @param {number} index Index à supprimer.
+   * @returns {void}
+   */
   function removeIngredientRow(index) {
     setIngredients(ingredients.filter((_, i) => i !== index));
   }
 
+  /**
+   * Enregistre les modifications de la recette.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e Événement de soumission.
+   * @returns {Promise<void>} Promesse de mise à jour.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setLoadingSubmit(true);

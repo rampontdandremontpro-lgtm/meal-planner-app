@@ -1,3 +1,11 @@
+/**
+ * @file App.jsx
+ * @description Composant racine de l'interface Meal Planner.
+ * Il déclare la navigation principale de l'application avec React Router,
+ * applique les protections d'accès sur les pages privées et redirige les
+ * utilisateurs selon leur état d'authentification.
+ */
+
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
@@ -12,6 +20,11 @@ import Planner from "./pages/Planner";
 import ShoppingList from "./pages/ShoppingList";
 import "./App.css";
 
+/**
+ * Initialise l'interface principale et configure l'ensemble des routes.
+ *
+ * @returns {JSX.Element} Arbre principal de l'application.
+ */
 function App() {
   const { isAuthenticated } = useAuth();
 

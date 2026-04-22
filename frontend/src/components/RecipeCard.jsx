@@ -1,5 +1,19 @@
+/**
+ * @file RecipeCard.jsx
+ * @description Carte d'affichage d'une recette dans une grille.
+ * Présente l'image, le titre, la catégorie et l'origine de la recette,
+ * puis redirige vers la page détail au clic.
+ */
+
 import { Link } from "react-router-dom";
 
+/**
+ * Affiche une carte résumée d'une recette.
+ *
+ * @param {Object} props Propriétés du composant.
+ * @param {Object} props.recipe Recette à afficher.
+ * @returns {JSX.Element} Carte cliquable redirigeant vers le détail.
+ */
 export default function RecipeCard({ recipe }) {
   return (
     <Link to={`/recipes/${recipe.source}/${recipe.id}`} className="recipe-card">

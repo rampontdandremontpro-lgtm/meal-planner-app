@@ -1,3 +1,10 @@
+/**
+ * @file main.jsx
+ * @description Point d'entrée de l'application React.
+ * Monte l'arbre React dans le DOM, active le routeur navigateur et
+ * injecte le contexte global d'authentification.
+ */
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";

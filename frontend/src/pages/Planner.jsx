@@ -1,13 +1,31 @@
+/**
+ * @file Planner.jsx
+ * @description Page de planning hebdomadaire des repas.
+ * Affiche les repas par jour et par type, récupère les données depuis l'API,
+ * permet la navigation entre semaines et la suppression d'un créneau planifié.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
+/**
+ * Types de repas affichés dans le planning hebdomadaire.
+ *
+ * @type {{key: string, label: string, className: string}[]}
+ */
 const MEAL_TYPES = [
   { key: "BREAKFAST", label: "Petit-déjeuner", className: "planner-breakfast" },
   { key: "LUNCH", label: "Déjeuner", className: "planner-lunch" },
   { key: "DINNER", label: "Dîner", className: "planner-dinner" },
 ];
 
+/**
+ * Retourne le lundi de la semaine correspondant à une date donnée.
+ *
+ * @param {Date} [date=new Date()] Date de référence.
+ * @returns {Date} Date normalisée du lundi à minuit.
+ */
 function getMonday(date = new Date()) {
   const d = new Date(date);
   const day = d.getDay();
@@ -17,6 +35,13 @@ function getMonday(date = new Date()) {
   return d;
 }
 
+/**
+ * Ajoute un nombre de jours à une date.
+ *
+ * @param {Date} date Date de départ.
+ * @param {number} days Nombre de jours à ajouter.
+ * @returns {Date} Nouvelle date calculée.
+ */
 function addDays(date, days) {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -24,6 +49,12 @@ function addDays(date, days) {
   return d;
 }
 
+/**
+ * Formate une date locale en chaîne YYYY-MM-DD.
+ *
+ * @param {Date} date Date à formater.
+ * @returns {string} Date formatée.
+ */
 function formatDateLocal(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -31,6 +62,12 @@ function formatDateLocal(date) {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Retourne le nom français du jour pour une date.
+ *
+ * @param {Date} date Date ciblée.
+ * @returns {string} Nom du jour.
+ */
 function getFrenchDayShort(date) {
   const days = [
     "Dimanche",
@@ -44,6 +81,11 @@ function getFrenchDayShort(date) {
   return days[date.getDay()];
 }
 
+/**
+ * Rend le planning hebdomadaire des repas.
+ *
+ * @returns {JSX.Element} Vue du planning.
+ */
 export default function Planner() {
   const navigate = useNavigate();
 
@@ -57,6 +99,11 @@ export default function Planner() {
     return Array.from({ length: 7 }, (_, index) => addDays(currentMonday, index));
   }, [currentMonday]);
 
+  /**
+   * Charge les repas de la semaine courante depuis l'API.
+   *
+   * @returns {Promise<void>} Promesse de chargement.
+   */
   async function loadMealPlans() {
     try {
       setLoading(true);
@@ -86,6 +133,12 @@ export default function Planner() {
     loadMealPlans();
   }, [currentMonday]);
 
+  /**
+   * Supprime un repas planifié puis recharge la semaine.
+   *
+   * @param {number|string} id Identifiant du meal plan à retirer.
+   * @returns {Promise<void>} Promesse de suppression.
+   */
   async function handleRemoveMealPlan(id) {
     try {
       setRemovingId(id);
@@ -106,12 +159,26 @@ export default function Planner() {
     }
   }
 
+  /**
+   * Recherche le repas correspondant à une cellule du tableau.
+   *
+   * @param {string} dateString Date ciblée.
+   * @param {string} mealType Type de repas.
+   * @returns {Object|undefined} Repas trouvé pour la cellule.
+   */
   function getMealForCell(dateString, mealType) {
     return mealPlans.find(
       (item) => item.date === dateString && item.mealType === mealType
     );
   }
 
+  /**
+   * Redirige vers la liste des recettes avec préremplissage du planning.
+   *
+   * @param {string} dateString Date sélectionnée.
+   * @param {string} mealType Type de repas sélectionné.
+   * @returns {void}
+   */
   function handleAddClick(dateString, mealType) {
     navigate("/recipes", {
       state: {

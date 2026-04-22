@@ -1,8 +1,28 @@
+/**
+ * @file AuthContext.jsx
+ * @description Contexte global d'authentification.
+ * Centralise l'utilisateur courant, le token, le chargement initial, les
+ * actions de connexion, d'inscription, de déconnexion et l'accès au statut
+ * d'authentification dans toute l'application.
+ */
+
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../services/api";
 
-const AuthContext = createContext();
+/**
+ * Contexte React partagé pour l'authentification.
+ *
+ * @type {React.Context<any>}
+ */
+export const AuthContext = createContext(null);
 
+/**
+ * Fournit l'état d'authentification et les actions associées à l'application.
+ *
+ * @param {Object} props Propriétés du provider.
+ * @param {React.ReactNode} props.children Contenu enfant à envelopper.
+ * @returns {JSX.Element} Provider React prêt à être consommé.
+ */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(sessionStorage.getItem("token") || "");
@@ -23,6 +43,13 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  /**
+   * Connecte l'utilisateur et stocke le token ainsi que le profil en session.
+   *
+   * @param {string} email Adresse email de l'utilisateur.
+   * @param {string} password Mot de passe utilisateur.
+   * @returns {Promise<any>} Réponse brute renvoyée par le backend.
+   */
   const login = async (email, password) => {
     const response = await api.post("/auth/login", {
       email,
@@ -45,6 +72,15 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
+  /**
+   * Inscrit un nouvel utilisateur via l'API.
+   *
+   * @param {string} firstname Prénom.
+   * @param {string} lastname Nom.
+   * @param {string} email Adresse email.
+   * @param {string} password Mot de passe.
+   * @returns {Promise<any>} Réponse brute du backend.
+   */
   const register = async (firstname, lastname, email, password) => {
     const response = await api.post("/auth/register", {
       firstname,
@@ -56,6 +92,11 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
+  /**
+   * Supprime les informations de session locales et réinitialise l'état.
+   *
+   * @returns {void}
+   */
   const logout = () => {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("user");
@@ -80,6 +121,11 @@ export function AuthProvider({ children }) {
   );
 }
 
+/**
+ * Accède simplement au contexte d'authentification.
+ *
+ * @returns {any} Valeur exposée par le provider d'authentification.
+ */
 export function useAuth() {
   return useContext(AuthContext);
 }

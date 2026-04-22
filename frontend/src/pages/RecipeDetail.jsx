@@ -1,9 +1,23 @@
+/**
+ * @file RecipeDetail.jsx
+ * @description Page détail d'une recette.
+ * Charge une recette locale ou externe, affiche ses informations complètes,
+ * permet son ajout au planning et, pour les recettes locales, sa modification
+ * ou sa suppression.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddToPlannerModal from "../components/AddToPlannerModal";
 import { getRecipeById, deleteRecipe } from "../services/recipeService";
 import { useAuth } from "../context/AuthContext";
 
+/**
+ * Transforme un texte d'instructions en liste d'étapes.
+ *
+ * @param {string} instructions Texte brut des instructions.
+ * @returns {string[]} Tableau d'étapes nettoyées.
+ */
 function getInstructionSteps(instructions) {
   if (!instructions) return [];
 
@@ -13,6 +27,11 @@ function getInstructionSteps(instructions) {
     .filter((step) => step.length > 0);
 }
 
+/**
+ * Rend la page détail d'une recette locale ou externe.
+ *
+ * @returns {JSX.Element} Vue détaillée de la recette.
+ */
 export default function RecipeDetail() {
   const { source, id } = useParams();
   const navigate = useNavigate();
@@ -61,6 +80,11 @@ export default function RecipeDetail() {
     return getInstructionSteps(recipe?.instructions);
   }, [recipe]);
 
+  /**
+   * Supprime la recette locale courante après confirmation.
+   *
+   * @returns {Promise<void>} Promesse de suppression.
+   */
   async function handleDelete() {
     if (!recipe || recipe.source !== "local") return;
 

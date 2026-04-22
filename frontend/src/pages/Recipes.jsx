@@ -1,9 +1,21 @@
+/**
+ * @file Recipes.jsx
+ * @description Page de catalogue des recettes.
+ * Récupère les recettes, calcule les catégories disponibles, applique les
+ * filtres de recherche et affiche les cartes correspondantes.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import { getRecipes } from "../services/recipeService";
 import { useAuth } from "../context/AuthContext";
 
+/**
+ * Rend le catalogue des recettes avec filtres et recherche.
+ *
+ * @returns {JSX.Element} Page liste des recettes.
+ */
 export default function Recipes() {
   const { isAuthenticated, user } = useAuth();
 
@@ -17,6 +29,11 @@ export default function Recipes() {
     fetchRecipes();
   }, [isAuthenticated]);
 
+  /**
+   * Charge l'ensemble des recettes disponibles.
+   *
+   * @returns {Promise<void>} Promesse de récupération.
+   */
   async function fetchRecipes() {
     setLoading(true);
     setError("");
