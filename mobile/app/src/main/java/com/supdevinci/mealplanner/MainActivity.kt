@@ -4,7 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.supdevinci.mealplanner.api.RetrofitClient
@@ -12,6 +16,7 @@ import com.supdevinci.mealplanner.data.TokenManager
 import com.supdevinci.mealplanner.repository.AuthRepository
 import com.supdevinci.mealplanner.repository.PlannerRepository
 import com.supdevinci.mealplanner.repository.RecipesRepository
+import com.supdevinci.mealplanner.repository.ShoppingListRepository
 import com.supdevinci.mealplanner.ui.components.MobileTopNavBar
 import com.supdevinci.mealplanner.ui.screens.AddRecipeScreen
 import com.supdevinci.mealplanner.ui.screens.EditRecipeScreen
@@ -20,7 +25,7 @@ import com.supdevinci.mealplanner.ui.screens.PlanningScreen
 import com.supdevinci.mealplanner.ui.screens.RecipeDetailScreen
 import com.supdevinci.mealplanner.ui.screens.RecipesScreen
 import com.supdevinci.mealplanner.ui.screens.RegisterScreen
-import com.supdevinci.mealplanner.ui.screens.ShoppingPlaceholderScreen
+import com.supdevinci.mealplanner.ui.screens.ShoppingListScreen
 import com.supdevinci.mealplanner.ui.screens.SplashScreen
 import com.supdevinci.mealplanner.ui.theme.MealPlannerTheme
 import com.supdevinci.mealplanner.viewmodel.AddRecipeViewModel
@@ -39,6 +44,8 @@ import com.supdevinci.mealplanner.viewmodel.RecipesViewModel
 import com.supdevinci.mealplanner.viewmodel.RecipesViewModelFactory
 import com.supdevinci.mealplanner.viewmodel.RegisterViewModel
 import com.supdevinci.mealplanner.viewmodel.RegisterViewModelFactory
+import com.supdevinci.mealplanner.viewmodel.ShoppingListViewModel
+import com.supdevinci.mealplanner.viewmodel.ShoppingListViewModelFactory
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -51,11 +58,9 @@ class MainActivity : ComponentActivity() {
         val authRepository = AuthRepository()
         val recipesRepository = RecipesRepository()
         val plannerRepository = PlannerRepository()
+        val shoppingListRepository = ShoppingListRepository()
         val tokenManager = TokenManager(applicationContext)
 
-        // ✅ IMPORTANT :
-        // à chaque relance de l'application, on efface le token
-        // pour revenir automatiquement en mode non connecté
         lifecycleScope.launch {
             tokenManager.clearToken()
         }
@@ -100,6 +105,11 @@ class MainActivity : ComponentActivity() {
             RecipeActionsViewModelFactory(recipesRepository)
         )[RecipeActionsViewModel::class.java]
 
+        val shoppingListViewModel = ViewModelProvider(
+            this,
+            ShoppingListViewModelFactory(shoppingListRepository)
+        )[ShoppingListViewModel::class.java]
+
         setContent {
             MealPlannerTheme {
                 var currentScreen by remember { mutableStateOf("splash") }
@@ -110,7 +120,6 @@ class MainActivity : ComponentActivity() {
                 var currentUserName by remember { mutableStateOf<String?>(null) }
 
                 LaunchedEffect(Unit) {
-                    // ✅ toujours démarrer déconnecté
                     isAuthenticated = false
                     currentUserName = null
                     loginViewModel.resetState()
@@ -129,7 +138,10 @@ class MainActivity : ComponentActivity() {
                                 if (isAuthenticated) currentScreen = "planning"
                             },
                             onShoppingClick = {
-                                if (isAuthenticated) currentScreen = "shopping"
+                                if (isAuthenticated) {
+                                    shoppingListViewModel.loadShoppingList()
+                                    currentScreen = "shopping"
+                                }
                             },
                             onLoginClick = {
                                 loginViewModel.resetState()
@@ -183,6 +195,7 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
                                 plannerViewModel.loadWeek()
+                                shoppingListViewModel.loadShoppingList()
                             },
                             onGoToRegister = { currentScreen = "register" }
                         )
@@ -207,6 +220,7 @@ class MainActivity : ComponentActivity() {
                             onDeleted = {
                                 currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
+                                shoppingListViewModel.loadShoppingList()
                             }
                         )
 
@@ -231,10 +245,12 @@ class MainActivity : ComponentActivity() {
                                 recipeDetailViewModel.loadRecipe("local", selectedRecipeId)
                                 currentScreen = "recipe_detail"
                                 recipesViewModel.loadRecipes()
+                                shoppingListViewModel.loadShoppingList()
                             },
                             onDeleted = {
                                 currentScreen = "recipes"
                                 recipesViewModel.loadRecipes()
+                                shoppingListViewModel.loadShoppingList()
                             }
                         )
 
@@ -249,7 +265,9 @@ class MainActivity : ComponentActivity() {
                             }
                         )
 
-                        "shopping" -> ShoppingPlaceholderScreen()
+                        "shopping" -> ShoppingListScreen(
+                            viewModel = shoppingListViewModel
+                        )
                     }
                 }
             }

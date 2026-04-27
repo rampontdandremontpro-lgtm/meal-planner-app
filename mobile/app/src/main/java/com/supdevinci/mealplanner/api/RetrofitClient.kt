@@ -75,4 +75,8 @@ object RetrofitClient {
     val plannerApi: PlannerApi by lazy {
         retrofit.create(PlannerApi::class.java)
     }
+
+    val shoppingListApi: ShoppingListApi by lazy {
+        retrofit.create(ShoppingListApi::class.java)
+    }
 }
