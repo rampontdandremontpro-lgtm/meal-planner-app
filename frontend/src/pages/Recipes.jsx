@@ -77,7 +77,7 @@ export default function Recipes() {
           {isAuthenticated ? (
             <>
               <p className="welcome-text">
-                Bienvenue {user?.firstname || user?.name || "utilisateur"} 👋
+                Bienvenue {user?.firstName || user?.name || "utilisateur"} 👋
               </p>
               <p>
                 Retrouvez les recettes de notre collection et vos recettes personnelles

@@ -75,16 +75,16 @@ export function AuthProvider({ children }) {
   /**
    * Inscrit un nouvel utilisateur via l'API.
    *
-   * @param {string} firstname Prénom.
-   * @param {string} lastname Nom.
+   * @param {string} firstName Prénom.
+   * @param {string} lastName Nom.
    * @param {string} email Adresse email.
    * @param {string} password Mot de passe.
    * @returns {Promise<any>} Réponse brute du backend.
    */
-  const register = async (firstname, lastname, email, password) => {
+  const register = async (firstName, lastName, email, password) => {
     const response = await api.post("/auth/register", {
-      firstname,
-      lastname,
+      firstName: firstName,
+      lastName: lastName,
       email,
       password,
     });

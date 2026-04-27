@@ -1,12 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ShoppingItem } from './entities/shopping-item.entity';
+import { ShoppingListAutoState } from './entities/shopping-list-auto-state.entity';
 import { CreateShoppingItemDto } from './dto/create-shopping-item.dto';
 import { UpdateShoppingItemDto } from './dto/update-shopping-item.dto';
+import { UpdateShoppingAutoItemDto } from './dto/update-shopping-auto-item.dto';
 import { UsersService } from '../users/users.service';
 import { MealPlansService } from '../meal-plans/meal-plans.service';
 
@@ -15,6 +14,10 @@ export class ShoppingListService {
   constructor(
     @InjectRepository(ShoppingItem)
     private readonly shoppingItemsRepository: Repository<ShoppingItem>,
+
+    @InjectRepository(ShoppingListAutoState)
+    private readonly autoStatesRepository: Repository<ShoppingListAutoState>,
+
     private readonly usersService: UsersService,
     private readonly mealPlansService: MealPlansService,
   ) {}
@@ -22,20 +25,14 @@ export class ShoppingListService {
   /**
    * Récupère la liste de courses de la semaine pour un utilisateur.
    *
-   * Cette méthode fusionne deux sources de données :
-   * - les ingrédients automatiques recalculés à partir du planning repas ;
-   * - les éléments manuels enregistrés en base par l'utilisateur.
+   * La méthode fusionne :
+   * - les ingrédients automatiques issus du planning ;
+   * - l'état persistant des ingrédients automatiques ;
+   * - les items manuels ajoutés par l'utilisateur.
    *
-   * Règles métier :
-   * - les ingrédients automatiques ne sont pas stockés en base ;
-   * - seuls les items manuels sont persistés et modifiables ;
-   * - la semaine est calculée du lundi au dimanche à partir de la date fournie ;
-   * - seuls les éléments de l'utilisateur demandé sont renvoyés.
-   *
-   * @param date Date de référence utilisée pour calculer la semaine.
-   * @param userId Identifiant de l'utilisateur.
-   * @returns La liste de courses hebdomadaire avec les bornes de semaine
-   * et la fusion des items automatiques et manuels.
+   * @param date Date de référence de la semaine.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns La liste de courses complète de la semaine.
    *
    * @throws {NotFoundException} Si l'utilisateur est introuvable.
    */
@@ -50,9 +47,18 @@ export class ShoppingListService {
 
     const weekMealPlans = await this.mealPlansService.findWeek(date, userId);
 
+    const autoStates = await this.autoStatesRepository.find({
+      where: {
+        user: { id: userId },
+        weekStart: startOfWeek,
+      },
+      relations: ['user'],
+    });
+
     const automaticItems = this.extractAutomaticItems(
       weekMealPlans.items,
       startOfWeek,
+      autoStates,
     );
 
     const manualItems = await this.shoppingItemsRepository.find({
@@ -87,18 +93,9 @@ export class ShoppingListService {
   /**
    * Ajoute un ingrédient manuel à la liste de courses.
    *
-   * Cette méthode crée un item manuel stocké en base de données et le rattache
-   * à la semaine correspondant à la date fournie dans le DTO.
-   *
-   * Règles métier :
-   * - seuls les items manuels sont créés via cette méthode ;
-   * - l'item est automatiquement associé à l'utilisateur connecté ;
-   * - `weekStart` est calculé à partir de la date envoyée par le front ;
-   * - l'item est créé avec `checked = false` et `isManual = true`.
-   *
-   * @param createShoppingItemDto Données nécessaires à la création de l'item manuel.
-   * @param userId Identifiant de l'utilisateur authentifié.
-   * @returns L'item manuel créé en base.
+   * @param createShoppingItemDto Données de l'item manuel.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns L'item manuel créé.
    *
    * @throws {NotFoundException} Si l'utilisateur est introuvable.
    */
@@ -128,24 +125,14 @@ export class ShoppingListService {
   }
 
   /**
-   * Met à jour l'état `checked` d'un ingrédient manuel.
+   * Met à jour l'état checked d'un ingrédient manuel.
    *
-   * Cette méthode permet de cocher ou décocher un item manuel appartenant
-   * à l'utilisateur connecté.
+   * @param id Identifiant de l'item manuel.
+   * @param updateShoppingItemDto Données de mise à jour.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns L'item manuel mis à jour.
    *
-   * Règles métier :
-   * - seuls les items manuels appartenant à l'utilisateur peuvent être modifiés ;
-   * - cette méthode met à jour uniquement l'état `checked` ;
-   * - si l'item n'existe pas ou n'appartient pas au user, il est considéré
-   *   comme introuvable.
-   *
-   * @param id Identifiant de l'item à mettre à jour.
-   * @param updateShoppingItemDto Nouveau statut de l'item.
-   * @param userId Identifiant de l'utilisateur authentifié.
-   * @returns L'item mis à jour.
-   *
-   * @throws {NotFoundException} Si l'item est introuvable
-   * ou n'appartient pas à l'utilisateur connecté.
+   * @throws {NotFoundException} Si l'item est introuvable.
    */
   async updateItem(
     id: number,
@@ -172,21 +159,11 @@ export class ShoppingListService {
   /**
    * Supprime un ingrédient manuel appartenant à l'utilisateur.
    *
-   * Cette méthode vérifie que l'item demandé existe bien et qu'il appartient
-   * à l'utilisateur authentifié avant de le supprimer.
+   * @param id Identifiant de l'item manuel.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns Message de confirmation.
    *
-   * Règles métier :
-   * - seuls les items manuels de l'utilisateur connecté peuvent être supprimés ;
-   * - les items automatiques ne sont pas concernés car ils ne sont pas stockés ;
-   * - si l'item n'existe pas ou n'appartient pas au user, il est considéré
-   *   comme introuvable.
-   *
-   * @param id Identifiant de l'item à supprimer.
-   * @param userId Identifiant de l'utilisateur authentifié.
-   * @returns Un objet contenant un message de confirmation.
-   *
-   * @throws {NotFoundException} Si l'item est introuvable
-   * ou n'appartient pas à l'utilisateur connecté.
+   * @throws {NotFoundException} Si l'item est introuvable.
    */
   async removeItem(id: number, userId: number) {
     const item = await this.shoppingItemsRepository.findOne({
@@ -209,36 +186,175 @@ export class ShoppingListService {
   }
 
   /**
+   * Coche ou décoche un ingrédient automatique.
+   *
+   * Cette méthode ne modifie pas la recette ni le planning.
+   * Elle crée ou met à jour uniquement l'état utilisateur de l'ingrédient.
+   *
+   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns L'état persistant de l'ingrédient automatique.
+   */
+  async updateAutoItem(
+    updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
+    userId: number,
+  ) {
+    const state = await this.findOrCreateAutoState(
+      updateShoppingAutoItemDto,
+      userId,
+    );
+
+    state.checked = updateShoppingAutoItemDto.checked ?? false;
+    state.hidden = false;
+
+    return this.autoStatesRepository.save(state);
+  }
+
+  /**
+   * Masque un ingrédient automatique dans la liste de courses.
+   *
+   * Cette méthode ne supprime pas la recette, le planning ou l'ingrédient source.
+   * Elle stocke seulement un état `hidden = true` pour l'utilisateur connecté.
+   *
+   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns L'état persistant de l'ingrédient automatique.
+   */
+  async hideAutoItem(
+    updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
+    userId: number,
+  ) {
+    const state = await this.findOrCreateAutoState(
+      updateShoppingAutoItemDto,
+      userId,
+    );
+
+    state.hidden = updateShoppingAutoItemDto.hidden ?? true;
+
+    return this.autoStatesRepository.save(state);
+  }
+
+  /**
+   * Retrouve ou crée l'état persistant d'un ingrédient automatique.
+   *
+   * Cette version utilise QueryBuilder pour gérer correctement les valeurs NULL
+   * avec TypeORM et PostgreSQL.
+   *
+   * @param dto Données de l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur connecté.
+   * @returns L'état existant ou une nouvelle entité non sauvegardée.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
+  private async findOrCreateAutoState(
+    dto: UpdateShoppingAutoItemDto,
+    userId: number,
+  ) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const { startOfWeek } = this.getWeekRange(dto.date);
+
+    const recipeId = dto.recipeId ?? null;
+    const externalRecipeId = dto.externalRecipeId ?? null;
+
+    const query = this.autoStatesRepository
+      .createQueryBuilder('state')
+      .leftJoinAndSelect('state.user', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('state.weekStart = :weekStart', { weekStart })
+      .andWhere('state.ingredientName = :ingredientName', {
+        ingredientName: dto.ingredientName,
+      });
+
+    if (recipeId !== null) {
+      query.andWhere('state.recipeId = :recipeId', { recipeId });
+    } else {
+      query.andWhere('state.recipeId IS NULL');
+    }
+
+    if (externalRecipeId !== null) {
+      query.andWhere('state.externalRecipeId = :externalRecipeId', {
+        externalRecipeId,
+      });
+    } else {
+      query.andWhere('state.externalRecipeId IS NULL');
+    }
+
+    const existingState = await query.getOne();
+
+    if (existingState) {
+      return existingState;
+    }
+
+    return this.autoStatesRepository.create({
+      user,
+      weekStart: startOfWeek,
+      recipeId,
+      externalRecipeId,
+      ingredientName: dto.ingredientName,
+      quantity: dto.quantity ?? '',
+      unit: dto.unit ?? '',
+      checked: false,
+      hidden: false,
+    });
+  }
+
+  /**
    * Extrait les ingrédients automatiques à partir du planning hebdomadaire.
    *
-   * Cette méthode parcourt les recettes associées aux meal plans de la semaine
-   * et transforme leurs ingrédients en items de liste de courses temporaires.
+   * Les états persistés sont appliqués :
+   * - si `hidden = true`, l'ingrédient n'est pas affiché ;
+   * - si `checked = true`, l'ingrédient est renvoyé comme coché.
    *
-   * Règles métier :
-   * - les items générés ici ne sont pas persistés en base ;
-   * - chaque ingrédient est transformé en item distinct ;
-   * - ces items sont marqués avec `isManual = false` et `source = automatic`.
-   *
-   * @param mealPlans Liste des repas de la semaine.
-   * @param weekStart Date du début de semaine.
-   * @returns Une liste d'items automatiques dérivés du planning.
+   * @param mealPlans Liste des meal plans de la semaine.
+   * @param weekStart Date du lundi de la semaine.
+   * @param autoStates États persistés des ingrédients automatiques.
+   * @returns Liste des ingrédients automatiques formatés.
    */
-  private extractAutomaticItems(mealPlans: any[], weekStart: string) {
+  private extractAutomaticItems(
+    mealPlans: any[],
+    weekStart: string,
+    autoStates: ShoppingListAutoState[],
+  ) {
     const items: any[] = [];
 
     for (const mealPlan of mealPlans) {
       const ingredients = mealPlan.recipe?.ingredients ?? [];
 
       for (const ingredient of ingredients) {
+        const recipeId =
+          mealPlan.source === 'local' ? Number(mealPlan.recipe?.id) : null;
+
+        const externalRecipeId =
+          mealPlan.source === 'external' ? String(mealPlan.recipe?.id) : null;
+
+        const state = autoStates.find(
+          (autoState) =>
+            autoState.weekStart === weekStart &&
+            autoState.ingredientName === ingredient.name &&
+            autoState.recipeId === recipeId &&
+            autoState.externalRecipeId === externalRecipeId,
+        );
+
+        if (state?.hidden) {
+          continue;
+        }
+
         items.push({
           id: `auto-${mealPlan.id}-${ingredient.name}`,
           name: ingredient.name ?? '',
           quantity: ingredient.quantity ?? '',
           unit: ingredient.unit ?? '',
-          checked: false,
+          checked: state?.checked ?? false,
           isManual: false,
           source: 'automatic',
           weekStart,
+          recipeId,
+          externalRecipeId,
         });
       }
     }
@@ -247,13 +363,10 @@ export class ShoppingListService {
   }
 
   /**
-   * Calcule le début et la fin de semaine à partir d'une date donnée.
-   *
-   * Cette méthode utilitaire renvoie les bornes hebdomadaires du lundi
-   * au dimanche au format `YYYY-MM-DD`.
+   * Calcule le lundi et le dimanche de la semaine correspondant à une date.
    *
    * @param dateString Date de référence.
-   * @returns Un objet contenant `startOfWeek` et `endOfWeek`.
+   * @returns Le début et la fin de semaine.
    */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
@@ -273,18 +386,16 @@ export class ShoppingListService {
   }
 
   /**
-   * Convertit une date JavaScript au format `YYYY-MM-DD`.
+   * Convertit une date JavaScript au format YYYY-MM-DD.
    *
-   * Cette méthode est utilisée pour harmoniser le stockage et la comparaison
-   * des dates de semaine dans le service.
-   *
-   * @param date Date JavaScript à convertir.
-   * @returns La date formatée au format `YYYY-MM-DD`.
+   * @param date Date JavaScript.
+   * @returns Date au format YYYY-MM-DD.
    */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
+
     return `${year}-${month}-${day}`;
   }
 }

@@ -19,8 +19,8 @@ export default function Register() {
   const { register } = useAuth();
 
   const [form, setForm] = useState({
-    firstname: "",
-    lastname: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
   });
@@ -56,8 +56,8 @@ export default function Register() {
 
     try {
       await register(
-        form.firstname,
-        form.lastname,
+        form.firstName,
+        form.lastName,
         form.email,
         form.password
       );
@@ -85,18 +85,18 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="auth-form">
           <input
             type="text"
-            name="firstname"
+            name="firstName"
             placeholder="Prénom"
-            value={form.firstname}
+            value={form.firstName}
             onChange={handleChange}
             required
           />
 
           <input
             type="text"
-            name="lastname"
+            name="lastName"
             placeholder="Nom"
-            value={form.lastname}
+            value={form.lastName}
             onChange={handleChange}
             required
           />
