@@ -1,39 +1,32 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
-/**
- * DTO utilisé pour l'inscription d'un utilisateur.
- *
- * Cette classe valide les données reçues lors de l'appel
- * à la route `POST /auth/register`.
- *
- * Règles métier :
- * - `firstName` est obligatoire ;
- * - `lastName` est obligatoire ;
- * - l'email doit être valide ;
- * - le mot de passe doit contenir au moins 6 caractères.
- */
 export class RegisterDto {
-  /**
-   * Prénom de l'utilisateur.
-   */
+  @ApiProperty({
+    example: 'Daphné',
+    description: "Prénom de l'utilisateur.",
+  })
   @IsNotEmpty()
   firstName!: string;
 
-  /**
-   * Nom de famille de l'utilisateur.
-   */
+  @ApiProperty({
+    example: 'Rampont',
+    description: "Nom de famille de l'utilisateur.",
+  })
   @IsNotEmpty()
   lastName!: string;
 
-  /**
-   * Adresse email de l'utilisateur.
-   */
+  @ApiProperty({
+    example: 'daphne@test.com',
+    description: "Adresse email de l'utilisateur.",
+  })
   @IsEmail()
   email!: string;
 
-  /**
-   * Mot de passe en clair fourni à l'inscription.
-   */
+  @ApiProperty({
+    example: 'password123',
+    description: 'Mot de passe avec au moins 6 caractères.',
+  })
   @MinLength(6)
   password!: string;
 }

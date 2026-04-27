@@ -1,13 +1,11 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean } from 'class-validator';
 
-/**
- * DTO utilisé pour mettre à jour l'état d'un item manuel
- * dans la liste de courses.
- */
 export class UpdateShoppingItemDto {
-  /**
-   * Indique si l'item est coché ou non.
-   */
+  @ApiProperty({
+    example: true,
+    description: "Indique si l'item manuel est coché.",
+  })
   @IsBoolean()
   checked!: boolean;
 }
