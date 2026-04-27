@@ -9,6 +9,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+/**
+ * DTO utilisé pour gérer l'état d'un ingrédient automatique.
+ *
+ * Ce DTO permet de cocher, décocher ou masquer un ingrédient issu du planning
+ * sans modifier la recette, le planning ou l'ingrédient d'origine.
+ */
 export class UpdateShoppingAutoItemDto {
   @ApiProperty({
     example: '2026-04-21',

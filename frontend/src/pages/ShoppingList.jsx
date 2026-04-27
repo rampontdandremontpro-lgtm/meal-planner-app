@@ -1,3 +1,11 @@
+/**
+ * @file ShoppingList.jsx
+ * @description Page de liste de courses du frontend Meal Planner.
+ * Elle affiche les ingrédients automatiques issus du planning et les ingrédients
+ * ajoutés manuellement, puis permet de les cocher, décocher ou supprimer avec
+ * les routes backend adaptées à chaque type d'item.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import {
   addShoppingItem,
@@ -8,6 +16,11 @@ import {
   updateShoppingItem,
 } from "../services/shoppingListService";
 
+/**
+ * Retourne la date du jour au format YYYY-MM-DD.
+ *
+ * @returns {string} Date du jour utilisable par les routes hebdomadaires.
+ */
 function getTodayDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -16,6 +29,12 @@ function getTodayDate() {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Convertit une valeur en entier si possible.
+ *
+ * @param {unknown} value Valeur reçue depuis l'API.
+ * @returns {number|null} Entier valide ou `null` si la conversion est impossible.
+ */
 function toIntegerOrNull(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -26,6 +45,12 @@ function toIntegerOrNull(value) {
   return Number.isInteger(numberValue) ? numberValue : null;
 }
 
+/**
+ * Convertit une valeur en chaîne de caractères si elle existe.
+ *
+ * @param {unknown} value Valeur reçue depuis l'API.
+ * @returns {string|null} Chaîne de caractères ou `null` si la valeur est vide.
+ */
 function toStringOrNull(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -34,6 +59,11 @@ function toStringOrNull(value) {
   return String(value);
 }
 
+/**
+ * Page principale de gestion de la liste de courses.
+ *
+ * @returns {JSX.Element} Interface complète de liste de courses.
+ */
 export default function ShoppingList() {
   const [items, setItems] = useState([]);
   const [manualInput, setManualInput] = useState("");
@@ -47,6 +77,13 @@ export default function ShoppingList() {
     loadShoppingList();
   }, []);
 
+  /**
+   * Charge la liste de courses hebdomadaire depuis l'API puis normalise les items.
+   * Les items automatiques et manuels sont conservés dans le même état local,
+   * mais leurs métadonnées permettent ensuite d'utiliser les bonnes routes.
+   *
+   * @returns {Promise<void>} Promesse résolue après le chargement.
+   */
   async function loadShoppingList() {
     try {
       setLoading(true);
@@ -98,6 +135,12 @@ export default function ShoppingList() {
     }
   }
 
+  /**
+   * Ajoute un ingrédient manuel à la liste de courses.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e Événement de soumission du formulaire.
+   * @returns {Promise<void>} Promesse résolue après l'ajout ou l'erreur.
+   */
   async function handleAddManualItem(e) {
     e.preventDefault();
 
@@ -135,6 +178,17 @@ export default function ShoppingList() {
     }
   }
 
+  /**
+   * Coche ou décoche un ingrédient.
+   * Utilise une mise à jour optimiste côté interface puis annule le changement
+   * en cas d'erreur backend.
+   *
+   * @param {Object} item Item à modifier.
+   * @param {string} item.id Identifiant frontend de l'item.
+   * @param {string} item.source Source de l'item (`automatic` ou `manual`).
+   * @param {boolean} nextChecked Nouvel état de coche.
+   * @returns {Promise<void>} Promesse résolue après la mise à jour.
+   */
   async function handleToggleChecked(item, nextChecked) {
     const previousItems = [...items];
 
@@ -180,6 +234,14 @@ export default function ShoppingList() {
     }
   }
 
+  /**
+   * Supprime un item manuel ou masque un item automatique.
+   *
+   * @param {Object} item Item à retirer de l'affichage.
+   * @param {string} item.id Identifiant frontend de l'item.
+   * @param {string} item.source Source de l'item (`automatic` ou `manual`).
+   * @returns {Promise<void>} Promesse résolue après la suppression ou le masquage.
+   */
   async function handleDeleteItem(item) {
     try {
       setErrorMessage("");
@@ -217,6 +279,12 @@ export default function ShoppingList() {
     }
   }
 
+  /**
+   * Rend une liste d'items sous forme de lignes interactives.
+   *
+   * @param {Object[]} list Liste des ingrédients à afficher.
+   * @returns {JSX.Element[]} Lignes de liste prêtes à être rendues.
+   */
   function renderItems(list) {
     return list.map((item) => (
       <div className="shopping-item-row" key={item.id}>

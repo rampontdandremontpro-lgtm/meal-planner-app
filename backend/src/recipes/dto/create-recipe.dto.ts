@@ -10,6 +10,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+/**
+ * DTO représentant un ingrédient lors de la création d'une recette locale.
+ */
 export class CreateRecipeIngredientDto {
   @ApiProperty({
     example: 'Tomates',
@@ -36,6 +39,12 @@ export class CreateRecipeIngredientDto {
   unit?: string;
 }
 
+/**
+ * DTO utilisé pour créer une recette locale.
+ *
+ * Il valide les informations générales de la recette ainsi que la liste
+ * des ingrédients associés.
+ */
 export class CreateRecipeDto {
   @ApiProperty({
     example: 'Salade de tomates',

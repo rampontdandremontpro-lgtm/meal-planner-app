@@ -3,6 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
+/**
+ * Service métier chargé de gérer les utilisateurs.
+ *
+ * Il est utilisé par les modules d'authentification, recettes, planning
+ * et liste de courses pour retrouver ou créer des utilisateurs.
+ */
 @Injectable()
 export class UsersService {
   constructor(

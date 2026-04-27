@@ -29,6 +29,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @ApiTags('Shopping List')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
+/**
+ * Controller responsable des routes de liste de courses.
+ *
+ * Il expose les endpoints permettant de récupérer la liste hebdomadaire,
+ * gérer les items manuels et gérer l'état des ingrédients automatiques.
+ */
 @Controller('shopping-list')
 export class ShoppingListController {
   constructor(private readonly shoppingListService: ShoppingListService) {}

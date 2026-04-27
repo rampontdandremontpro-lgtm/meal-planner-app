@@ -8,6 +8,12 @@ import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UsersService } from '../users/users.service';
 import { TheMealDbService } from './the-meal-db.service';
 
+/**
+ * Service métier chargé de gérer les recettes.
+ *
+ * Il gère les recettes locales stockées en base et les recettes externes
+ * provenant de TheMealDB.
+ */
 @Injectable()
 export class RecipesService {
   constructor(

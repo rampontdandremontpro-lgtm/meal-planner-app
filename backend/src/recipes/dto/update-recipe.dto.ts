@@ -10,6 +10,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+/**
+ * DTO représentant un ingrédient lors de la mise à jour d'une recette locale.
+ */
 export class UpdateRecipeIngredientDto {
   @ApiProperty({
     example: 'Tomates',
@@ -36,6 +39,12 @@ export class UpdateRecipeIngredientDto {
   unit?: string;
 }
 
+/**
+ * DTO utilisé pour mettre à jour une recette locale.
+ *
+ * Il valide les nouvelles informations de la recette et remplace la liste
+ * des ingrédients par celle envoyée par le frontend.
+ */
 export class UpdateRecipeDto {
   @ApiProperty({
     example: 'Salade de tomates modifiée',

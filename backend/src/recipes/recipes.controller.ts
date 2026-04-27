@@ -27,6 +27,13 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Recipes')
+/**
+ * Controller responsable des routes liées aux recettes.
+ *
+ * Il expose les endpoints permettant de lister, créer, consulter,
+ * modifier et supprimer les recettes locales, ainsi que de consulter
+ * les recettes externes provenant de TheMealDB.
+ */
 @Controller('recipes')
 export class RecipesController {
   constructor(private readonly recipesService: RecipesService) {}

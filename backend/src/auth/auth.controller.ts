@@ -5,6 +5,12 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 @ApiTags('Auth')
+/**
+ * Controller responsable de l'authentification.
+ *
+ * Il expose les routes publiques d'inscription et de connexion
+ * utilisées pour créer un compte et obtenir un token JWT.
+ */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

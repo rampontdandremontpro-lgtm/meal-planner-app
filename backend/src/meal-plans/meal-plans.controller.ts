@@ -26,6 +26,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @ApiTags('Meal Plans')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
+/**
+ * Controller responsable des routes du planning repas.
+ *
+ * Il permet d'ajouter un repas au planning, de récupérer la semaine
+ * d'un utilisateur et de supprimer un élément du planning.
+ */
 @Controller('meal-plans')
 export class MealPlansController {
   constructor(private readonly mealPlansService: MealPlansService) {}

@@ -3,6 +3,17 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+/**
+ * Démarre l'application NestJS.
+ *
+ * Cette fonction configure :
+ * - CORS pour autoriser les appels du frontend ;
+ * - le `ValidationPipe` global pour sécuriser les DTO ;
+ * - Swagger pour exposer la documentation API ;
+ * - le port d'écoute du serveur.
+ *
+ * @returns Une promesse résolue lorsque l'application est démarrée.
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

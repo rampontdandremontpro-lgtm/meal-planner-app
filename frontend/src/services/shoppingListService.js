@@ -1,3 +1,10 @@
+/**
+ * @file shoppingListService.js
+ * @description Fonctions de service dédiées à la liste de courses.
+ * Ce module isole les appels HTTP pour les ingrédients manuels et automatiques
+ * afin que les composants React ne manipulent pas directement les routes API.
+ */
+
 import api from "./api";
 
 /**

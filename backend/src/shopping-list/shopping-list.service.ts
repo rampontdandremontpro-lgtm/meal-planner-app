@@ -9,6 +9,20 @@ import { UpdateShoppingAutoItemDto } from './dto/update-shopping-auto-item.dto';
 import { UsersService } from '../users/users.service';
 import { MealPlansService } from '../meal-plans/meal-plans.service';
 
+/**
+ * Service de gestion de la liste de courses.
+ *
+ * Ce service gère trois parties importantes :
+ * - les ingrédients automatiques calculés depuis le planning repas ;
+ * - les items manuels ajoutés directement par l'utilisateur ;
+ * - l'état utilisateur des ingrédients automatiques, comme `checked` et `hidden`.
+ *
+ * Règles métier :
+ * - les ingrédients automatiques ne sont pas copiés en items manuels ;
+ * - les ingrédients automatiques restent issus du planning ;
+ * - seuls leurs états utilisateur sont persistés en base ;
+ * - les items manuels restent stockés dans la table `shopping_items`.
+ */
 @Injectable()
 export class ShoppingListService {
   constructor(
@@ -22,6 +36,23 @@ export class ShoppingListService {
     private readonly mealPlansService: MealPlansService,
   ) {}
 
+  /**
+   * Récupère la liste de courses d'une semaine pour un utilisateur.
+   *
+   * La méthode fusionne :
+   * - les ingrédients automatiques issus des recettes du planning ;
+   * - les états persistés des ingrédients automatiques ;
+   * - les items manuels ajoutés par l'utilisateur.
+   *
+   * Si un ingrédient automatique possède `hidden = true`, il n'est pas renvoyé.
+   * Si un ingrédient automatique possède `checked = true`, il est renvoyé coché.
+   *
+   * @param date Date de référence au format `YYYY-MM-DD`.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns La liste de courses hebdomadaire avec les items automatiques et manuels.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
   async findWeek(date: string, userId: number) {
     const user = await this.usersService.findById(userId);
 
@@ -76,6 +107,18 @@ export class ShoppingListService {
     };
   }
 
+  /**
+   * Ajoute un ingrédient manuel dans la liste de courses.
+   *
+   * L'item est rattaché à l'utilisateur connecté et à la semaine calculée
+   * à partir de la date fournie dans le DTO.
+   *
+   * @param createShoppingItemDto Données de l'ingrédient manuel.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns L'item manuel créé et sauvegardé en base.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
   async createManualItem(
     createShoppingItemDto: CreateShoppingItemDto,
     userId: number,
@@ -101,6 +144,19 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
+  /**
+   * Coche ou décoche un ingrédient manuel.
+   *
+   * Seuls les items manuels appartenant à l'utilisateur connecté
+   * peuvent être modifiés par cette méthode.
+   *
+   * @param id Identifiant de l'item manuel.
+   * @param updateShoppingItemDto Données de mise à jour contenant l'état `checked`.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns L'item manuel mis à jour.
+   *
+   * @throws {NotFoundException} Si l'item est introuvable ou appartient à un autre utilisateur.
+   */
   async updateItem(
     id: number,
     updateShoppingItemDto: UpdateShoppingItemDto,
@@ -123,6 +179,18 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
+  /**
+   * Supprime un ingrédient manuel de la liste de courses.
+   *
+   * Cette suppression ne concerne que les items manuels persistés en base.
+   * Les ingrédients automatiques doivent être masqués via `hideAutoItem`.
+   *
+   * @param id Identifiant de l'item manuel.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns Un message de confirmation.
+   *
+   * @throws {NotFoundException} Si l'item est introuvable ou appartient à un autre utilisateur.
+   */
   async removeItem(id: number, userId: number) {
     const item = await this.shoppingItemsRepository.findOne({
       where: {
@@ -143,6 +211,18 @@ export class ShoppingListService {
     };
   }
 
+  /**
+   * Coche ou décoche un ingrédient automatique issu du planning.
+   *
+   * Cette méthode ne modifie pas la recette, le planning ou l'ingrédient source.
+   * Elle sauvegarde uniquement l'état utilisateur de l'ingrédient automatique.
+   *
+   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns L'état persistant de l'ingrédient automatique.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
   async updateAutoItem(
     updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -158,6 +238,19 @@ export class ShoppingListService {
     return this.autoStatesRepository.save(state);
   }
 
+  /**
+   * Masque un ingrédient automatique dans la liste de courses.
+   *
+   * Cette méthode ne supprime pas la recette ni le planning.
+   * Elle ajoute simplement un état `hidden = true` pour l'utilisateur
+   * et la semaine concernée.
+   *
+   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns L'état persistant de l'ingrédient automatique.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
   async hideAutoItem(
     updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -172,6 +265,18 @@ export class ShoppingListService {
     return this.autoStatesRepository.save(state);
   }
 
+  /**
+   * Retrouve ou crée l'état persistant d'un ingrédient automatique.
+   *
+   * QueryBuilder est utilisé pour gérer correctement les valeurs `NULL`
+   * sur `recipeId` et `externalRecipeId` avec PostgreSQL.
+   *
+   * @param dto Données permettant d'identifier l'ingrédient automatique.
+   * @param userId Identifiant de l'utilisateur authentifié.
+   * @returns L'état existant ou une nouvelle entité non encore sauvegardée.
+   *
+   * @throws {NotFoundException} Si l'utilisateur est introuvable.
+   */
   private async findOrCreateAutoState(
     dto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -231,6 +336,18 @@ export class ShoppingListService {
     });
   }
 
+  /**
+   * Extrait les ingrédients automatiques à partir du planning.
+   *
+   * Pour chaque ingrédient, la méthode recherche un état persistant existant.
+   * Si l'état indique que l'ingrédient est masqué, il n'est pas ajouté
+   * à la réponse. Sinon, il est renvoyé avec son état `checked`.
+   *
+   * @param mealPlans Liste des repas planifiés sur la semaine.
+   * @param weekStart Date du lundi de la semaine.
+   * @param autoStates États persistés des ingrédients automatiques.
+   * @returns Liste des ingrédients automatiques formatés pour le frontend.
+   */
   private extractAutomaticItems(
     mealPlans: any[],
     weekStart: string,
@@ -278,6 +395,14 @@ export class ShoppingListService {
     return items;
   }
 
+  /**
+   * Calcule les bornes d'une semaine à partir d'une date.
+   *
+   * La semaine est calculée du lundi au dimanche.
+   *
+   * @param dateString Date de référence au format `YYYY-MM-DD`.
+   * @returns Un objet contenant `startOfWeek` et `endOfWeek`.
+   */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
     const day = date.getDay();
@@ -295,6 +420,12 @@ export class ShoppingListService {
     };
   }
 
+  /**
+   * Convertit une date JavaScript au format `YYYY-MM-DD`.
+   *
+   * @param date Date JavaScript à convertir.
+   * @returns Date formatée au format `YYYY-MM-DD`.
+   */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
