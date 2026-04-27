@@ -52,7 +52,7 @@ export default function EditRecipe() {
       setForm({
         title: recipe.title || "",
         category: recipe.category || "",
-        imageUrl: recipe.image || "",
+        imageUrl: recipe.imageUrl || "",
         prepTime: recipe.prepTime || "",
         servings: recipe.servings || "",
         instructions: recipe.instructions || "",

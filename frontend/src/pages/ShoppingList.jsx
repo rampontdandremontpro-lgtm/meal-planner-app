@@ -3,13 +3,11 @@ import {
   addShoppingItem,
   deleteShoppingItem,
   getShoppingList,
+  hideAutoShoppingItem,
+  updateAutoShoppingItem,
   updateShoppingItem,
 } from "../services/shoppingListService";
 
-/**
- * Retourne la date du jour au format YYYY-MM-DD.
- * @returns {string}
- */
 function getTodayDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -18,18 +16,24 @@ function getTodayDate() {
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Page liste de courses.
- * Affiche :
- * - les ingrédients automatiques issus du planning
- * - les items manuels ajoutés par l'utilisateur
- * Permet :
- * - d'ajouter un ingrédient
- * - de cocher / décocher
- * - de supprimer uniquement les items manuels
- *
- * @returns {JSX.Element}
- */
+function toIntegerOrNull(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  return Number.isInteger(numberValue) ? numberValue : null;
+}
+
+function toStringOrNull(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return String(value);
+}
+
 export default function ShoppingList() {
   const [items, setItems] = useState([]);
   const [manualInput, setManualInput] = useState("");
@@ -43,9 +47,6 @@ export default function ShoppingList() {
     loadShoppingList();
   }, []);
 
-  /**
-   * Charge la liste de courses hebdomadaire depuis le backend.
-   */
   async function loadShoppingList() {
     try {
       setLoading(true);
@@ -54,15 +55,30 @@ export default function ShoppingList() {
       const data = await getShoppingList(selectedDate);
       const backendItems = data?.items || [];
 
-      const normalized = backendItems.map((item, index) => ({
-        id: item.id ?? `fallback-${index}`,
-        name: item.name || "Ingrédient",
-        quantity: item.quantity || "",
-        unit: item.unit || "",
-        checked: Boolean(item.checked),
-        isManual: Boolean(item.isManual),
-        source: item.source || (item.isManual ? "manual" : "automatic"),
-      }));
+      const normalized = backendItems.map((item, index) => {
+        const source = item.source || (item.isManual ? "manual" : "automatic");
+        const ingredientName = item.ingredientName || item.name || "Ingrédient";
+        const recipeId = toIntegerOrNull(item.recipeId);
+        const externalRecipeId = toStringOrNull(item.externalRecipeId);
+
+        return {
+          id:
+            item.id ??
+            `auto-${
+              recipeId || externalRecipeId || "unknown"
+            }-${ingredientName}-${index}`,
+          name: item.name || ingredientName,
+          ingredientName,
+          quantity: item.quantity || "",
+          unit: item.unit || "",
+          checked: Boolean(item.checked),
+          isManual: Boolean(item.isManual),
+          source,
+          recipeId,
+          externalRecipeId,
+          weekStart: item.weekStart || data?.weekStart || selectedDate,
+        };
+      });
 
       setItems(normalized);
     } catch (error) {
@@ -75,23 +91,21 @@ export default function ShoppingList() {
           ? backendMessage.join(", ")
           : backendMessage
       );
+
       setItems([]);
     } finally {
       setLoading(false);
     }
   }
 
-  /**
-   * Ajoute un ingrédient manuel à la liste.
-   * Le backend exige { name, date } au minimum.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} e
-   */
   async function handleAddManualItem(e) {
     e.preventDefault();
 
     const trimmed = manualInput.trim();
-    if (!trimmed) return;
+
+    if (!trimmed) {
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -121,28 +135,36 @@ export default function ShoppingList() {
     }
   }
 
-  /**
-   * Coche ou décoche un ingrédient.
-   * Seuls les items manuels sont modifiables côté backend.
-   *
-   * @param {number|string} id
-   * @param {boolean} nextChecked
-   * @param {boolean} isManual
-   */
-  async function handleToggleChecked(id, nextChecked, isManual) {
-    if (!isManual) return;
-
+  async function handleToggleChecked(item, nextChecked) {
     const previousItems = [...items];
 
     setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, checked: nextChecked } : item
+      current.map((currentItem) =>
+        currentItem.id === item.id
+          ? { ...currentItem, checked: nextChecked }
+          : currentItem
       )
     );
 
     try {
       setErrorMessage("");
-      await updateShoppingItem(id, { checked: nextChecked });
+      setMessage("");
+
+      if (item.source === "automatic") {
+        await updateAutoShoppingItem({
+          date: item.weekStart || selectedDate,
+          recipeId: item.recipeId,
+          externalRecipeId: item.externalRecipeId,
+          ingredientName: item.ingredientName || item.name,
+          quantity: item.quantity || "",
+          unit: item.unit || "",
+          checked: nextChecked,
+        });
+      } else {
+        await updateShoppingItem(item.id, {
+          checked: nextChecked,
+        });
+      }
     } catch (error) {
       setItems(previousItems);
 
@@ -158,23 +180,30 @@ export default function ShoppingList() {
     }
   }
 
-  /**
-   * Supprime un ingrédient manuel.
-   * Les items automatiques issus du planning ne doivent pas être supprimables.
-   *
-   * @param {number|string} id
-   * @param {boolean} isManual
-   */
-  async function handleDeleteItem(id, isManual) {
-    if (!isManual) return;
-
+  async function handleDeleteItem(item) {
     try {
       setErrorMessage("");
       setMessage("");
 
-      await deleteShoppingItem(id);
-      setItems((current) => current.filter((item) => item.id !== id));
-      setMessage("Ingrédient supprimé.");
+      if (item.source === "automatic") {
+        await hideAutoShoppingItem({
+          date: item.weekStart || selectedDate,
+          recipeId: item.recipeId,
+          externalRecipeId: item.externalRecipeId,
+          ingredientName: item.ingredientName || item.name,
+          quantity: item.quantity || "",
+          unit: item.unit || "",
+          hidden: true,
+        });
+      } else {
+        await deleteShoppingItem(item.id);
+      }
+
+      setItems((current) =>
+        current.filter((currentItem) => currentItem.id !== item.id)
+      );
+
+      setMessage("Ingrédient supprimé de la liste.");
     } catch (error) {
       const backendMessage =
         error?.response?.data?.message ||
@@ -187,6 +216,54 @@ export default function ShoppingList() {
       );
     }
   }
+
+  function renderItems(list) {
+    return list.map((item) => (
+      <div className="shopping-item-row" key={item.id}>
+        <label className="shopping-item-left">
+          <input
+            type="checkbox"
+            checked={item.checked}
+            onChange={(e) => handleToggleChecked(item, e.target.checked)}
+          />
+
+          <span
+            className={
+              item.checked ? "shopping-item-text checked" : "shopping-item-text"
+            }
+          >
+            {[item.quantity, item.unit, item.name].filter(Boolean).join(" ")}
+          </span>
+        </label>
+
+        <div className="shopping-item-actions">
+          {item.source === "automatic" ? (
+            <span className="shopping-auto-badge">Planning</span>
+          ) : (
+            <span className="shopping-manual-badge">Manuel</span>
+          )}
+
+          <button
+            type="button"
+            className="danger-button small-danger-button"
+            onClick={() => handleDeleteItem(item)}
+          >
+            Supprimer
+          </button>
+        </div>
+      </div>
+    ));
+  }
+
+  const automaticItems = useMemo(
+    () => items.filter((item) => item.source === "automatic"),
+    [items]
+  );
+
+  const manualItems = useMemo(
+    () => items.filter((item) => item.source !== "automatic"),
+    [items]
+  );
 
   const checkedCount = useMemo(
     () => items.filter((item) => item.checked).length,
@@ -218,11 +295,8 @@ export default function ShoppingList() {
           value={manualInput}
           onChange={(e) => setManualInput(e.target.value)}
         />
-        <button
-          type="submit"
-          className="primary-button"
-          disabled={submitting}
-        >
+
+        <button type="submit" className="primary-button" disabled={submitting}>
           {submitting ? "Ajout..." : "Ajouter"}
         </button>
       </form>
@@ -239,45 +313,50 @@ export default function ShoppingList() {
           <p>Aucun ingrédient dans la liste pour le moment.</p>
         </div>
       ) : (
-        <div className="shopping-list-card">
-          {items.map((item) => (
-            <div className="shopping-item-row" key={item.id}>
-              <label className="shopping-item-left">
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  disabled={!item.isManual}
-                  onChange={(e) =>
-                    handleToggleChecked(item.id, e.target.checked, item.isManual)
-                  }
-                />
-                <span
-                  className={
-                    item.checked
-                      ? "shopping-item-text checked"
-                      : "shopping-item-text"
-                  }
-                >
-                  {[item.quantity, item.unit, item.name]
-                    .filter(Boolean)
-                    .join(" ")}
-                  {!item.isManual ? " • auto" : ""}
-                </span>
-              </label>
+        <div className="shopping-sections">
+          <section className="shopping-section-card">
+            <div className="shopping-section-header">
+              <div>
+                <h2>Ingrédients du planning</h2>
+                <p>Ils viennent automatiquement des recettes planifiées.</p>
+              </div>
 
-              {item.isManual ? (
-                <button
-                  type="button"
-                  className="danger-button small-danger-button"
-                  onClick={() => handleDeleteItem(item.id, item.isManual)}
-                >
-                  Supprimer
-                </button>
-              ) : (
-                <span className="shopping-auto-badge">Planning</span>
-              )}
+              <span className="shopping-section-count">
+                {automaticItems.length}
+              </span>
             </div>
-          ))}
+
+            {automaticItems.length > 0 ? (
+              <div className="shopping-list-card">
+                {renderItems(automaticItems)}
+              </div>
+            ) : (
+              <div className="shopping-section-empty">
+                Aucun ingrédient automatique pour le moment.
+              </div>
+            )}
+          </section>
+
+          <section className="shopping-section-card">
+            <div className="shopping-section-header">
+              <div>
+                <h2>Ingrédients ajoutés manuellement</h2>
+                <p>Ce sont les ingrédients que vous ajoutez vous-même.</p>
+              </div>
+
+              <span className="shopping-section-count">
+                {manualItems.length}
+              </span>
+            </div>
+
+            {manualItems.length > 0 ? (
+              <div className="shopping-list-card">{renderItems(manualItems)}</div>
+            ) : (
+              <div className="shopping-section-empty">
+                Aucun ingrédient manuel ajouté.
+              </div>
+            )}
+          </section>
         </div>
       )}
     </div>

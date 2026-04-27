@@ -22,20 +22,6 @@ export class ShoppingListService {
     private readonly mealPlansService: MealPlansService,
   ) {}
 
-  /**
-   * Récupère la liste de courses de la semaine pour un utilisateur.
-   *
-   * La méthode fusionne :
-   * - les ingrédients automatiques issus du planning ;
-   * - l'état persistant des ingrédients automatiques ;
-   * - les items manuels ajoutés par l'utilisateur.
-   *
-   * @param date Date de référence de la semaine.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns La liste de courses complète de la semaine.
-   *
-   * @throws {NotFoundException} Si l'utilisateur est introuvable.
-   */
   async findWeek(date: string, userId: number) {
     const user = await this.usersService.findById(userId);
 
@@ -90,15 +76,6 @@ export class ShoppingListService {
     };
   }
 
-  /**
-   * Ajoute un ingrédient manuel à la liste de courses.
-   *
-   * @param createShoppingItemDto Données de l'item manuel.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns L'item manuel créé.
-   *
-   * @throws {NotFoundException} Si l'utilisateur est introuvable.
-   */
   async createManualItem(
     createShoppingItemDto: CreateShoppingItemDto,
     userId: number,
@@ -124,16 +101,6 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
-  /**
-   * Met à jour l'état checked d'un ingrédient manuel.
-   *
-   * @param id Identifiant de l'item manuel.
-   * @param updateShoppingItemDto Données de mise à jour.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns L'item manuel mis à jour.
-   *
-   * @throws {NotFoundException} Si l'item est introuvable.
-   */
   async updateItem(
     id: number,
     updateShoppingItemDto: UpdateShoppingItemDto,
@@ -156,15 +123,6 @@ export class ShoppingListService {
     return this.shoppingItemsRepository.save(item);
   }
 
-  /**
-   * Supprime un ingrédient manuel appartenant à l'utilisateur.
-   *
-   * @param id Identifiant de l'item manuel.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns Message de confirmation.
-   *
-   * @throws {NotFoundException} Si l'item est introuvable.
-   */
   async removeItem(id: number, userId: number) {
     const item = await this.shoppingItemsRepository.findOne({
       where: {
@@ -185,16 +143,6 @@ export class ShoppingListService {
     };
   }
 
-  /**
-   * Coche ou décoche un ingrédient automatique.
-   *
-   * Cette méthode ne modifie pas la recette ni le planning.
-   * Elle crée ou met à jour uniquement l'état utilisateur de l'ingrédient.
-   *
-   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns L'état persistant de l'ingrédient automatique.
-   */
   async updateAutoItem(
     updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -210,16 +158,6 @@ export class ShoppingListService {
     return this.autoStatesRepository.save(state);
   }
 
-  /**
-   * Masque un ingrédient automatique dans la liste de courses.
-   *
-   * Cette méthode ne supprime pas la recette, le planning ou l'ingrédient source.
-   * Elle stocke seulement un état `hidden = true` pour l'utilisateur connecté.
-   *
-   * @param updateShoppingAutoItemDto Données de l'ingrédient automatique.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns L'état persistant de l'ingrédient automatique.
-   */
   async hideAutoItem(
     updateShoppingAutoItemDto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -234,18 +172,6 @@ export class ShoppingListService {
     return this.autoStatesRepository.save(state);
   }
 
-  /**
-   * Retrouve ou crée l'état persistant d'un ingrédient automatique.
-   *
-   * Cette version utilise QueryBuilder pour gérer correctement les valeurs NULL
-   * avec TypeORM et PostgreSQL.
-   *
-   * @param dto Données de l'ingrédient automatique.
-   * @param userId Identifiant de l'utilisateur connecté.
-   * @returns L'état existant ou une nouvelle entité non sauvegardée.
-   *
-   * @throws {NotFoundException} Si l'utilisateur est introuvable.
-   */
   private async findOrCreateAutoState(
     dto: UpdateShoppingAutoItemDto,
     userId: number,
@@ -265,7 +191,9 @@ export class ShoppingListService {
       .createQueryBuilder('state')
       .leftJoinAndSelect('state.user', 'user')
       .where('user.id = :userId', { userId })
-      .andWhere('state.weekStart = :weekStart', { weekStart })
+      .andWhere('state.weekStart = :weekStart', {
+        weekStart: startOfWeek,
+      })
       .andWhere('state.ingredientName = :ingredientName', {
         ingredientName: dto.ingredientName,
       });
@@ -303,18 +231,6 @@ export class ShoppingListService {
     });
   }
 
-  /**
-   * Extrait les ingrédients automatiques à partir du planning hebdomadaire.
-   *
-   * Les états persistés sont appliqués :
-   * - si `hidden = true`, l'ingrédient n'est pas affiché ;
-   * - si `checked = true`, l'ingrédient est renvoyé comme coché.
-   *
-   * @param mealPlans Liste des meal plans de la semaine.
-   * @param weekStart Date du lundi de la semaine.
-   * @param autoStates États persistés des ingrédients automatiques.
-   * @returns Liste des ingrédients automatiques formatés.
-   */
   private extractAutomaticItems(
     mealPlans: any[],
     weekStart: string,
@@ -362,12 +278,6 @@ export class ShoppingListService {
     return items;
   }
 
-  /**
-   * Calcule le lundi et le dimanche de la semaine correspondant à une date.
-   *
-   * @param dateString Date de référence.
-   * @returns Le début et la fin de semaine.
-   */
   private getWeekRange(dateString: string) {
     const date = new Date(dateString);
     const day = date.getDay();
@@ -385,12 +295,6 @@ export class ShoppingListService {
     };
   }
 
-  /**
-   * Convertit une date JavaScript au format YYYY-MM-DD.
-   *
-   * @param date Date JavaScript.
-   * @returns Date au format YYYY-MM-DD.
-   */
   private toDateOnly(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

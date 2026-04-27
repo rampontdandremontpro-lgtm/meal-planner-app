@@ -14,7 +14,6 @@ function getTodayDate() {
 
 /**
  * Récupère la liste de courses de la semaine.
- * Le backend attend GET /shopping-list/week?date=YYYY-MM-DD.
  *
  * @param {string} [date]
  * @returns {Promise<{weekStart:string,weekEnd:string,items:Array}>}
@@ -23,13 +22,12 @@ export async function getShoppingList(date = getTodayDate()) {
   const response = await api.get("/shopping-list/week", {
     params: { date },
   });
+
   return response.data;
 }
 
 /**
  * Ajoute un ingrédient manuel.
- * Le backend attend POST /shopping-list/items avec :
- * { name, quantity?, unit?, date }
  *
  * @param {{name:string, quantity?:string, unit?:string, date?:string}} payload
  * @returns {Promise<Object>}
@@ -41,6 +39,7 @@ export async function addShoppingItem(payload) {
     unit: payload.unit || "",
     date: payload.date || getTodayDate(),
   });
+
   return response.data;
 }
 
@@ -55,6 +54,7 @@ export async function updateShoppingItem(id, payload) {
   const response = await api.patch(`/shopping-list/items/${id}`, {
     checked: payload.checked,
   });
+
   return response.data;
 }
 
@@ -66,5 +66,90 @@ export async function updateShoppingItem(id, payload) {
  */
 export async function deleteShoppingItem(id) {
   const response = await api.delete(`/shopping-list/items/${id}`);
+
+  return response.data;
+}
+
+/**
+ * Nettoie le payload d'un ingrédient automatique.
+ * Le backend ne veut pas recevoir recipeId:null ou externalRecipeId:null.
+ *
+ * @param {Object} payload
+ * @returns {Object}
+ */
+function buildAutoShoppingPayload(payload) {
+  const body = {
+    date: payload.date,
+    ingredientName: payload.ingredientName,
+    quantity: payload.quantity || "",
+    unit: payload.unit || "",
+  };
+
+  if (payload.recipeId !== null && payload.recipeId !== undefined) {
+    const recipeIdAsNumber = Number(payload.recipeId);
+
+    if (Number.isInteger(recipeIdAsNumber)) {
+      body.recipeId = recipeIdAsNumber;
+    }
+  }
+
+  if (
+    payload.externalRecipeId !== null &&
+    payload.externalRecipeId !== undefined &&
+    String(payload.externalRecipeId).trim() !== ""
+  ) {
+    body.externalRecipeId = String(payload.externalRecipeId);
+  }
+
+  return body;
+}
+
+/**
+ * Coche / décoche un ingrédient automatique issu du planning.
+ *
+ * @param {{
+ * date:string,
+ * recipeId?:number|string|null,
+ * externalRecipeId?:string|number|null,
+ * ingredientName:string,
+ * quantity?:string,
+ * unit?:string,
+ * checked:boolean
+ * }} payload
+ * @returns {Promise<Object>}
+ */
+export async function updateAutoShoppingItem(payload) {
+  const body = {
+    ...buildAutoShoppingPayload(payload),
+    checked: payload.checked,
+  };
+
+  const response = await api.patch("/shopping-list/auto", body);
+
+  return response.data;
+}
+
+/**
+ * Masque un ingrédient automatique issu du planning.
+ *
+ * @param {{
+ * date:string,
+ * recipeId?:number|string|null,
+ * externalRecipeId?:string|number|null,
+ * ingredientName:string,
+ * quantity?:string,
+ * unit?:string,
+ * hidden:boolean
+ * }} payload
+ * @returns {Promise<Object>}
+ */
+export async function hideAutoShoppingItem(payload) {
+  const body = {
+    ...buildAutoShoppingPayload(payload),
+    hidden: payload.hidden,
+  };
+
+  const response = await api.patch("/shopping-list/auto/hide", body);
+
   return response.data;
 }
