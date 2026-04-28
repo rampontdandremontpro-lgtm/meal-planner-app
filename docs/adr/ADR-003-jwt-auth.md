@@ -4,19 +4,19 @@
 Accepté
 
 ## Contexte
-L’application nécessite une authentification sécurisée pour accéder aux fonctionnalités.
+L’application nécessite une authentification sécurisée afin de protéger les fonctionnalités utilisateur.
 
 ## Décision
-Utilisation de JWT (JSON Web Token).
+Nous avons choisi JWT pour gérer l’authentification.
 
 ## Conséquences positives
 - Authentification stateless
-- Compatible web et mobile
+- Compatible avec le frontend web et le mobile
 - Facile à intégrer avec NestJS
 
 ## Conséquences négatives
-- Gestion du token côté client nécessaire
-- Pas de révocation simple
+- Gestion du token nécessaire côté client
+- Révocation moins simple qu’avec des sessions serveur
 
 ## Alternatives envisagées
 - Sessions serveur

@@ -4,19 +4,21 @@
 Accepté
 
 ## Contexte
-Le projet nécessite une version mobile moderne.
+Le projet nécessite une application mobile Android moderne et maintenable.
 
 ## Décision
-Utilisation de Kotlin avec Jetpack Compose.
+Nous avons choisi Kotlin avec Jetpack Compose.
 
 ## Conséquences positives
 - UI déclarative moderne
 - Code plus lisible
 - Bonne intégration Android
+- Adapté à l’architecture MVVM
 
 ## Conséquences négatives
-- Apprentissage de Compose nécessaire
+- Apprentissage de Jetpack Compose nécessaire
+- Débogage parfois plus complexe pour l’UI
 
 ## Alternatives envisagées
-- XML Android classique
+- Android XML classique
 - Flutter

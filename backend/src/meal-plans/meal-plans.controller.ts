@@ -39,7 +39,8 @@ export class MealPlansController {
   @Post()
   @ApiOperation({
     summary: 'Ajouter une recette au planning',
-    description: 'Ajoute une recette locale ou externe au planning de la semaine.',
+    description:
+      'Ajoute une recette locale ou externe au planning de la semaine.',
   })
   @ApiBody({ type: CreateMealPlanDto })
   @ApiResponse({ status: 201, description: 'Repas ajouté au planning.' })
@@ -75,7 +76,8 @@ export class MealPlansController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Supprimer un repas du planning',
-    description: 'Supprime un élément du planning appartenant à l’utilisateur connecté.',
+    description:
+      'Supprime un élément du planning appartenant à l’utilisateur connecté.',
   })
   @ApiParam({
     name: 'id',

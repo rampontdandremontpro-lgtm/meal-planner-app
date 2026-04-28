@@ -98,7 +98,8 @@ export class RecipesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Détail d’une recette locale',
-    description: 'Retourne une recette locale appartenant à l’utilisateur connecté.',
+    description:
+      'Retourne une recette locale appartenant à l’utilisateur connecté.',
   })
   @ApiParam({
     name: 'id',
@@ -120,7 +121,8 @@ export class RecipesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Modifier une recette locale',
-    description: 'Modifie une recette locale appartenant à l’utilisateur connecté.',
+    description:
+      'Modifie une recette locale appartenant à l’utilisateur connecté.',
   })
   @ApiParam({
     name: 'id',
@@ -144,7 +146,8 @@ export class RecipesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Supprimer une recette locale',
-    description: 'Supprime une recette locale appartenant à l’utilisateur connecté.',
+    description:
+      'Supprime une recette locale appartenant à l’utilisateur connecté.',
   })
   @ApiParam({
     name: 'id',

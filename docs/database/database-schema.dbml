@@ -1,0 +1,92 @@
+Enum meal_type {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+Enum meal_source {
+  local
+  external
+}
+
+Table users {
+  id integer [pk, increment]
+  name varchar [not null]
+  email varchar [not null, unique]
+  password varchar [not null]
+  createdAt timestamp [not null]
+
+  Note: "Utilisateur de l'application. Le champ name correspond au nom complet."
+}
+
+Table recipes {
+  id integer [pk, increment]
+  title varchar [not null]
+  description varchar
+  instructions text [not null]
+  category varchar
+  imageUrl varchar
+  prepTime varchar
+  servings integer
+  createdAt timestamp [not null]
+  userId integer [not null]
+
+  Note: "Recettes locales créées par un utilisateur."
+}
+
+Table recipe_ingredients {
+  id integer [pk, increment]
+  name varchar [not null]
+  quantity varchar
+  unit varchar
+  recipeId integer [not null]
+
+  Note: "Ingrédients liés aux recettes locales."
+}
+
+Table meal_plans {
+  id integer [pk, increment]
+  date date [not null]
+  mealType meal_type [not null]
+  source meal_source [not null, default: 'local']
+  externalRecipeId varchar
+  userId integer [not null]
+  recipeId integer
+
+  Note: "Planning repas. Peut pointer vers une recette locale ou une recette externe."
+}
+
+Table shopping_items {
+  id integer [pk, increment]
+  name varchar [not null]
+  quantity varchar
+  unit varchar
+  checked boolean [not null, default: false]
+  isManual boolean [not null, default: true]
+  weekStart date [not null]
+  userId integer [not null]
+
+  Note: "Items ajoutés manuellement dans la liste de courses."
+}
+
+Table shopping_list_auto_states {
+  id integer [pk, increment]
+  weekStart date [not null]
+  recipeId integer
+  externalRecipeId varchar
+  ingredientName varchar [not null]
+  quantity varchar
+  unit varchar
+  checked boolean [not null, default: false]
+  hidden boolean [not null, default: false]
+  userId integer [not null]
+
+  Note: "État personnalisé des ingrédients automatiques issus du planning."
+}
+
+Ref: recipes.userId > users.id [delete: cascade]
+Ref: recipe_ingredients.recipeId > recipes.id [delete: cascade]
+Ref: meal_plans.userId > users.id [delete: cascade]
+Ref: meal_plans.recipeId > recipes.id [delete: cascade]
+Ref: shopping_items.userId > users.id [delete: cascade]
+Ref: shopping_list_auto_states.userId > users.id [delete: cascade]

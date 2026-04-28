@@ -4,18 +4,19 @@
 Accepté
 
 ## Contexte
-Le projet nécessite une interface web rapide et dynamique.
+Le projet nécessite une interface web dynamique, rapide et maintenable.
 
 ## Décision
-Utilisation de React avec Vite.
+Nous avons choisi React avec Vite pour le frontend web.
 
 ## Conséquences positives
-- Rechargement rapide
+- Démarrage et rechargement rapides
 - Composants réutilisables
-- Facile à connecter à l’API
+- Connexion simple avec l’API via Axios
 
 ## Conséquences négatives
-- Gestion des états parfois complexe
+- Gestion d’état parfois complexe
+- Nécessite une bonne organisation des composants
 
 ## Alternatives envisagées
 - Angular

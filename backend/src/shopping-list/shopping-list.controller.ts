@@ -107,7 +107,8 @@ export class ShoppingListController {
   @Delete('items/:id')
   @ApiOperation({
     summary: 'Supprimer un item manuel',
-    description: 'Supprime définitivement un item manuel de la liste de courses.',
+    description:
+      'Supprime définitivement un item manuel de la liste de courses.',
   })
   @ApiParam({
     name: 'id',

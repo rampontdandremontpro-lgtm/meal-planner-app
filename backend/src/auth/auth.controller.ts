@@ -18,7 +18,8 @@ export class AuthController {
   @Post('register')
   @ApiOperation({
     summary: 'Inscription utilisateur',
-    description: 'Crée un nouvel utilisateur avec prénom, nom, email et mot de passe.',
+    description:
+      'Crée un nouvel utilisateur avec prénom, nom, email et mot de passe.',
   })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({

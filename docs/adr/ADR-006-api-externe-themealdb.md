@@ -4,19 +4,22 @@
 Accepté
 
 ## Contexte
-Le projet nécessite des recettes sans créer une base complète.
+Le projet nécessite des recettes sans devoir créer une base de données complète de recettes dès le départ.
 
 ## Décision
-Utilisation de l’API TheMealDB.
+Nous avons choisi d’utiliser l’API externe TheMealDB.
 
 ## Conséquences positives
-- Données rapides à intégrer
-- Pas besoin de créer une base de recettes
-- Gratuit
+- Données disponibles rapidement
+- Intégration simple
+- Pas besoin de créer toutes les recettes manuellement
+- Permet de combiner recettes externes et recettes locales
 
 ## Conséquences négatives
 - Dépendance à une API externe
-- Données limitées
+- Données parfois limitées
+- Format des données à adapter côté backend
 
 ## Alternatives envisagées
-- Spoonacular
+- Créer toutes les recettes localement
+- Utiliser une autre API comme Spoonacular

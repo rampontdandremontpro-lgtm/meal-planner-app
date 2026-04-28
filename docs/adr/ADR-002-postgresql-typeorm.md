@@ -4,19 +4,19 @@
 Accepté
 
 ## Contexte
-Le projet nécessite une base de données relationnelle pour gérer les utilisateurs, recettes et planning.
+Le projet nécessite une base de données relationnelle pour gérer les utilisateurs, les recettes, le planning et la liste de courses.
 
 ## Décision
-Utilisation de PostgreSQL avec TypeORM.
+Nous avons choisi PostgreSQL avec TypeORM.
 
 ## Conséquences positives
 - Base relationnelle robuste
-- TypeORM facilite les requêtes
-- Bonne intégration avec NestJS
+- Relations claires entre les entités
+- TypeORM facilite les requêtes et l’intégration avec NestJS
 
 ## Conséquences négatives
 - Configuration initiale plus complexe
 - Moins flexible qu’une base NoSQL
 
 ## Alternatives envisagées
-- MongoDB : moins adapté aux relations complexes
+- MongoDB : moins adapté aux relations du projet complexe

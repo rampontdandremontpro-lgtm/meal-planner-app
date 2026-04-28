@@ -4,13 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
-  },
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "storybook": "storybook dev -p 6006",
+  "build-storybook": "storybook build",
+  "test": "vitest",
+  "test:run": "vitest run",
+  "test:coverage": "vitest run --coverage"
+},
   "dependencies": {
     "axios": "^1.15.1",
     "react": "^19.2.5",
